@@ -1,0 +1,124 @@
+/* %define api.pure full */
+%code requires {
+  #include "_acirc.h"
+}
+%parse-param { acirc_t *c } { acirc_eval_f f } { void *extra }
+/* below not available on bison 2.7 */
+%define parse.error verbose
+
+/* C declarations */
+
+%{
+#include "_acirc.h"
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+extern int yylineno;
+extern int yylex(void);
+
+void yyerror(const acirc_t *c, const acirc_eval_f f, void *extra, const char *m)
+{
+    (void) c; (void) f; (void) extra;
+    fprintf(stderr, "error: [line %d] %s\n", yylineno, m);
+}
+
+struct ll_node {
+    struct ll_node *next;
+    ref_t data;
+};
+
+struct ll {
+    struct ll_node *start;
+    struct ll_node *end;
+    size_t length;
+};
+
+%}
+
+/* Bison declarations */
+
+%union { 
+    ref_t ref;
+    acirc_op op;
+    struct ll *ll;
+};
+
+%token INPUT CONST OUTPUTS TEST ENDL
+%token  <ref>           NUM
+%token  <op>            GATE
+%type   <ll>            numlist
+
+/* Grammar rules */
+
+%%
+
+prog:           | prog line
+        ;
+
+line:           input | const | gate | outputs
+                ;
+
+input:          NUM INPUT NUM ENDLS
+                {
+                    acirc_eval_input(c, $1, $3);
+                }
+                ;
+
+const:          NUM CONST NUM ENDLS
+                {
+                    acirc_eval_const(c, $1, $3);
+                }
+                ;
+
+gate:           NUM GATE NUM NUM ENDLS
+                {
+                    acirc_eval_gate(c, $2, $1, $3, $4, f, extra);
+                }
+                ;
+
+numlist:       /* empty */
+                {
+                    struct ll *list = calloc(1, sizeof list[0]);
+                    list->start = list->end = NULL;
+                    $$ = list;
+                }
+        |       numlist NUM
+                {
+                    struct ll *list = $1;
+                    struct ll_node *node = calloc(1, sizeof node[0]);
+                    node->data = $2;
+                    if (list->start == NULL) {
+                        list->start = node;
+                        list->end = node;
+                    } else {
+                        list->end->next = node;
+                        list->end = node;
+                    }
+                    list->length++;
+                    $$ = list;
+                }
+                ;
+
+outputs:        OUTPUTS numlist ENDLS
+                {
+                    ref_t *refs;
+                    struct ll *list = $2;
+                    struct ll_node *node = list->start;
+                    refs = calloc(list->length, sizeof refs[0]);
+                    for (size_t i = 0; i < list->length; ++i) {
+                        struct ll_node *tmp;
+                        refs[i] = node->data;
+                        tmp = node->next;
+                        free(node);
+                        node = tmp;
+                    }
+                    acirc_eval_outputs(c, refs, list->length);
+                    free(list);
+                }
+                ;
+
+ENDLS:          ENDLS ENDL | ENDL
+                ;
+
+%%
