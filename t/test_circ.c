@@ -5,14 +5,14 @@
 int
 test(const char *fname)
 {
-
     acirc_t *c;
     const size_t n = 80;
     const size_t m = 80;
+    int ret = 1;
 
     if ((c = acirc_new(fname)) == NULL) {
         fprintf(stderr, "error: acirc_new failed\n");
-        return 0;
+        return ret;
     }
 
     /* { */
@@ -60,22 +60,23 @@ test(const char *fname)
         }
         printf("\n");
         outputs = acirc_eval_mpz(c, inputs, n, m, modulus);
-        printf("outputs: ");
-        for (size_t i = 0; i < m; ++i) {
-            gmp_printf("%Zd ", *outputs[i]);
+        if (outputs) {
+            printf("outputs: ");
+            for (size_t i = 0; i < m; ++i) {
+                gmp_printf("%Zd ", *outputs[i]);
+            }
+            printf("\n");
+            free(outputs);
         }
-        printf("\n");
-        free(outputs);
         acirc_reset(c);
     }
-    
     acirc_free(c);
-    return 1;
+    return 0;
 }
 
 int
 main(int argc, char **argv)
 {
     (void) argc; (void) argv;
-    return test("t/circuits/size_test.acirc");
+    return test("t/circuits/aes.dsl.acirc");
 }

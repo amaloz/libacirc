@@ -1,6 +1,11 @@
 #include "map.h"
 #include <stdlib.h>
 
+struct map_t {
+    void **values;
+    size_t n;
+};
+
 map_t *
 map_new(void)
 {

@@ -1,8 +1,9 @@
 /* %define api.pure full */
 %code requires {
   #include "_acirc.h"
+  #include <setjmp.h>
 }
-%parse-param { acirc_t *c } { acirc_eval_f f } { void *extra }
+%parse-param { acirc_t *c } { acirc_eval_f f } { void *extra } { jmp_buf env }
 /* below not available on bison 2.7 */
 %define parse.error verbose
 
@@ -10,6 +11,7 @@
 
 %{
 #include "_acirc.h"
+#include <setjmp.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,9 +19,9 @@
 extern int yylineno;
 extern int yylex(void);
 
-void yyerror(const acirc_t *c, const acirc_eval_f f, void *extra, const char *m)
+void yyerror(const acirc_t *c, const acirc_eval_f f, void *extra, jmp_buf env, const char *m)
 {
-    (void) c; (void) f; (void) extra;
+    (void) c; (void) f; (void) extra; (void) env;
     fprintf(stderr, "error: [line %d] %s\n", yylineno, m);
 }
 
@@ -38,7 +40,7 @@ struct ll {
 
 /* Bison declarations */
 
-%union { 
+%union {
     ref_t ref;
     acirc_op op;
     struct ll *ll;
@@ -61,7 +63,8 @@ line:           input | const | gate | outputs
 
 input:          NUM INPUT NUM ENDLS
                 {
-                    acirc_eval_input(c, $1, $3);
+                    if (acirc_eval_input(c, $1, $3) == ACIRC_ERR)
+                        longjmp(env, ACIRC_ERR);
                 }
                 ;
 

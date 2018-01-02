@@ -3,6 +3,7 @@
 #include "map.h"
 #include "parse.h"
 
+#include <setjmp.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -45,6 +46,8 @@ acirc_free(acirc_t *c)
         return;
     if (c->fp)
         fclose(c->fp);
+    if (c->outrefs)
+        free(c->outrefs);
     if (c->map)
         free(c->map);
     free(c);
@@ -63,19 +66,26 @@ acirc_reset(acirc_t *c)
 
 int
 acirc_traverse(acirc_t *c, void **inputs, size_t ninputs, void **outputs,
-               size_t noutputs, acirc_eval_f f, void *extra)
+               size_t noutputs, acirc_eval_f eval, void *extra)
 {
+    jmp_buf env;
+    int ret = ACIRC_ERR;
     c->inputs = inputs;
     c->ninputs = ninputs;
     yyin = c->fp;
-    if (yyparse(c, f, extra) != 0) {
+    setjmp(env);
+    if (yyparse(c, eval, extra, env) != 0) {
         fprintf(stderr, "error: parsing circuit failed\n");
-        return ACIRC_ERR;
+        goto cleanup;
     }
     for (size_t i = 0; i < noutputs; ++i) {
         outputs[i] = map_get(c->map, c->outrefs[i]);
     }
-    return ACIRC_OK;
+    ret = ACIRC_OK;
+cleanup:
+    c->inputs = NULL;
+    c->ninputs = 0;
+    return ret;
 }
 
 static void *
@@ -103,7 +113,12 @@ acirc_degrees(acirc_t *c, size_t n, size_t m)
     inputs = calloc(n, sizeof inputs[0]);
     outputs = calloc(m, sizeof outputs[0]);
     for (size_t i = 0; i < n; ++i) inputs[i] = 1;
-    (void) acirc_traverse(c, (void **) inputs, n, (void **) outputs, m, _acirc_degrees, NULL);
+    if (acirc_traverse(c, (void **) inputs, n, (void **) outputs, m, _acirc_degrees, NULL) == ACIRC_ERR) {
+        free(inputs);
+        free(outputs);
+        return NULL;
+    }
+    free(inputs);
     return outputs;
 }
 
@@ -112,7 +127,8 @@ acirc_max_degree(acirc_t *c, size_t n, size_t m)
 {
     unsigned long max = 0, *outputs;
 
-    outputs = acirc_degrees(c, n, m);
+    if ((outputs = acirc_degrees(c, n, m)) == NULL)
+        return 0;
     for (size_t i = 0; i < m; ++i) {
         if (outputs[i] > max)
             max = outputs[i];
@@ -136,7 +152,12 @@ acirc_depths(acirc_t *c, size_t n, size_t m)
     unsigned long *inputs, *outputs;
     inputs = calloc(n, sizeof inputs[0]);
     outputs = calloc(m, sizeof outputs[0]);
-    (void) acirc_traverse(c, (void **) inputs, n, (void **) outputs, m, _acirc_depths, NULL);
+    if (acirc_traverse(c, (void **) inputs, n, (void **) outputs, m, _acirc_depths, NULL) == ACIRC_ERR) {
+        free(inputs);
+        free(outputs);
+        return NULL;
+    }
+    free(inputs);
     return outputs;
 }
 
@@ -145,7 +166,8 @@ acirc_max_depth(acirc_t *c, size_t n, size_t m)
 {
     unsigned long max = 0, *outputs;
 
-    outputs = acirc_depths(c, n, m);
+    if ((outputs = acirc_depths(c, n, m)) == NULL)
+        return 0;
     for (size_t i = 0; i < m; ++i) {
         if (outputs[i] > max)
             max = outputs[i];
@@ -179,7 +201,10 @@ acirc_eval(acirc_t *c, long *inputs, size_t n, size_t m)
     long *outputs;
 
     outputs = calloc(m, sizeof outputs[0]);
-    (void) acirc_traverse(c, (void **) inputs, n, (void **) outputs, m, _acirc_eval, NULL);
+    if (acirc_traverse(c, (void **) inputs, n, (void **) outputs, m, _acirc_eval, NULL) == ACIRC_ERR) {
+        free(outputs);
+        return NULL;
+    }
     return outputs;
 }
 
@@ -212,7 +237,10 @@ acirc_eval_mpz(acirc_t *c, mpz_t **inputs, size_t n, size_t m, mpz_t modulus)
     mpz_t **outputs;
 
     outputs = calloc(m, sizeof outputs[0]);
-    (void) acirc_traverse(c, (void **) inputs, n, (void **) outputs, m, _acirc_eval_mpz, modulus);
+    if (acirc_traverse(c, (void **) inputs, n, (void **) outputs, m, _acirc_eval_mpz, modulus) == ACIRC_ERR) {
+        free(outputs);
+        return NULL;
+    }
     return outputs;
 }
 
@@ -239,12 +267,12 @@ acirc_eval_const(acirc_t *c, ref_t ref, int val)
 }
 
 int
-acirc_eval_gate(acirc_t *c, acirc_op op, ref_t ref, ref_t x, ref_t y, acirc_eval_f f, void *extra)
+acirc_eval_gate(acirc_t *c, acirc_op op, ref_t ref, ref_t x, ref_t y, acirc_eval_f eval, void *extra)
 {
     void *x_, *y_, *_out;
     x_ = map_get(c->map, x);
     y_ = map_get(c->map, y);
-    _out = f(op, x_, y_, extra);
+    _out = eval(op, x_, y_, extra);
     map_put(c->map, ref, _out);
     return ACIRC_OK;
 }
