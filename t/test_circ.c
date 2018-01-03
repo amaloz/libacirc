@@ -42,29 +42,32 @@ test(const char *fname)
     acirc_test(c);
 
     {
-        mpz_t xs[acirc_ninputs(c)], modulus;
+        mpz_t **xs, modulus, **outputs;
         mpz_init_set_ui(modulus, 2377000);
+        xs = calloc(acirc_ninputs(c), sizeof xs[0]);
         printf("inputs: ");
         for (size_t i = 0; i < acirc_ninputs(c); ++i) {
-            mpz_init_set_ui(xs[i], 1);
-            gmp_printf("%Zd ", xs[i]);
+            xs[i] = calloc(1, sizeof xs[i][0]);
+            mpz_init_set_ui(*xs[i], 0);
+            gmp_printf("%Zd ", *xs[i]);
         }
         printf("\n");
-        if (acirc_eval_mpz(c, xs, NULL, modulus) == ACIRC_OK) {
-            mpz_t *output;
+        outputs = acirc_eval_mpz(c, xs, NULL, modulus);
+        if (outputs) {
             printf("outputs: ");
             for (size_t i = 0; i < acirc_noutputs(c); ++i) {
-                output = acirc_output(c, i);
-                gmp_printf("%Zd ", *output);
-                mpz_clear(*output);
+                gmp_printf("%Zd ", *outputs[i]);
+                mpz_clear(*outputs[i]);
+                free(outputs[i]);
             }
             printf("\n");
         }
-        for (size_t i = 0; i < acirc_ninputs(c); ++i) {
-            mpz_clear(xs[i]);
-        }
+        free(xs);
+        free(outputs);
+        mpz_clear(modulus);
     }
-    acirc_free(c);
+
+    acirc_free(c, NULL);
     return 0;
 }
 
@@ -74,5 +77,6 @@ main(int argc, char **argv)
     (void) argc; (void) argv;
     int ok = 0;
     ok |= test("t/circuits/test.acirc");
-    ok |= test("t/circuits/size_test.acirc");
+    /* ok |= test("t/circuits/size_test.acirc"); */
+    return ok;
 }

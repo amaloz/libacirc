@@ -1,7 +1,6 @@
 /* %define api.pure full */
 %code requires {
   #include "_acirc.h"
-  #include <setjmp.h>
 }
 %parse-param { acirc_t *c }
              { acirc_input_f input_f }
@@ -9,7 +8,6 @@
              { acirc_eval_f eval_f }
              { void *extra }
              { threadpool *pool }
-             { jmp_buf env }
 /* below not available on bison 2.7 */
 %define parse.error verbose
 
@@ -17,7 +15,6 @@
 
 %{
 #include "_acirc.h"
-#include <setjmp.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,9 +24,9 @@ extern int yylex(void);
 
 void
 yyerror(const acirc_t *c, const acirc_input_f input_f, const acirc_const_f const_f,
-        const acirc_eval_f eval_f, void *extra, threadpool *pool, jmp_buf env, const char *m)
+        const acirc_eval_f eval_f, void *extra, threadpool *pool, const char *m)
 {
-    (void) c; (void) input_f; (void) const_f; (void) eval_f; (void) extra; (void) pool; (void) env;
+    (void) c; (void) input_f; (void) const_f; (void) eval_f; (void) extra; (void) pool;
     fprintf(stderr, "error: [line %d] %s\n", yylineno, m);
 }
 
@@ -78,6 +75,8 @@ test:           TEST STR STR ENDL
                 {
                     if (!c->prelim)
                         acirc_eval_test(c, $2, $3);
+                    free($2);
+                    free($3);
                 }
                 ;
 
@@ -106,14 +105,14 @@ start:          START ENDL
 input:          NUM INPUT NUM ENDLS
                 {
                     if (acirc_eval_input(c, input_f, $1, $3, extra) == ACIRC_ERR)
-                        longjmp(env, ACIRC_ERR);
+                        YYABORT;
                 }
                 ;
 
 const:          NUM CONST NUM ENDLS
                 {
                     if (acirc_eval_const(c, const_f, $1, $3, extra) == ACIRC_ERR)
-                        longjmp(env, ACIRC_ERR);
+                        YYABORT;
                 }
                 ;
 
@@ -148,7 +147,7 @@ numlist:       /* empty */
 
 consts:         CONSTS numlist ENDLS
                 {
-                    int *vals;
+                    long *vals;
                     struct ll *list = $2;
                     struct ll_node *node = list->start;
                     vals = calloc(list->length, sizeof vals[0]);
@@ -159,8 +158,11 @@ consts:         CONSTS numlist ENDLS
                         free(node);
                         node = tmp;
                     }
-                acirc_eval_consts(c, vals, list->length);
-                free(list);
+                    if (!c->prelim)
+                        acirc_eval_consts(c, vals, list->length);
+                    else
+                        free(vals);
+                    free(list);
                 }
                 ;
 
@@ -177,7 +179,10 @@ outputs:        OUTPUTS numlist ENDLS
                         free(node);
                         node = tmp;
                     }
-                    acirc_eval_outputs(c, refs, list->length);
+                    if (!c->prelim)
+                        acirc_eval_outputs(c, refs, list->length);
+                    else
+                        free(refs);
                     free(list);
                 }
                 ;

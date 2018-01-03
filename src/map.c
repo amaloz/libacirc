@@ -18,12 +18,17 @@ map_new(void)
 }
 
 void
-map_free(map_t *m)
+map_free(map_t *m, acirc_free_f f)
 {
     if (m == NULL)
         return;
-    if (m->values)
+    if (m->values) {
+        if (f)
+            for (size_t i = 0; i < m->n; ++i) {
+                f(m->values[i]);
+            }
         free(m->values);
+    }
     free(m);
 }
 

@@ -2,20 +2,25 @@
 #include "parse.h"
 #include "map.h"
 
+#include <stdlib.h>
+
 static void *
 _eval_f(acirc_op op, void *x, void *y, void *count_)
 {
     (void) x; (void) y;
-    unsigned long *count = count_;
+    long *count = count_;
     if (op == ACIRC_OP_MUL)
         (*count)++;
     return NULL;
 }
 
-unsigned long
+long
 acirc_nmuls(acirc_t *c)
 {
-    unsigned long count = 0;
-    acirc_traverse(c, NULL, NULL, _eval_f, &count);
+    void **outputs;
+    long count = 0;
+
+    outputs = acirc_traverse(c, NULL, NULL, _eval_f, NULL, NULL, &count);
+    free(outputs);
     return count;
 }

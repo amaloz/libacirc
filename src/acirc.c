@@ -3,7 +3,6 @@
 #include "map.h"
 
 #include <ctype.h>
-#include <setjmp.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -44,13 +43,13 @@ acirc_ntests(const acirc_t *c)
     return c->ntests;
 }
 
-int *
+long *
 acirc_test_input(const acirc_t *c, size_t i)
 {
     return c->tests[i].inps;
 }
 
-int *
+long *
 acirc_test_output(const acirc_t *c, size_t i)
 {
     return c->tests[i].outs;
@@ -68,67 +67,81 @@ acirc_new(const char *fname)
         goto error;
     }
 
-    {
-        jmp_buf env;
-        setjmp(env);
-        yyin = c->fp;
-        if (yyparse(c, NULL, NULL, NULL, NULL, NULL, env) != 0) {
-            fprintf(stderr, "error: parsing circuit failed\n");
-            goto error;
-        }
+    yyin = c->fp;
+    if (yyparse(c, NULL, NULL, NULL, NULL, NULL) != 0) {
+        fprintf(stderr, "error: parsing circuit failed\n");
+        goto error;
     }
-    c->map = map_new();
     return c;
 error:
-    acirc_free(c);
+    acirc_free(c, NULL);
     return NULL;
 }
 
 void
-acirc_free(acirc_t *c)
+acirc_free(acirc_t *c, acirc_free_f f)
 {
     if (c == NULL)
         return;
     if (c->fp)
         fclose(c->fp);
+    if (c->consts)
+        free(c->consts);
     if (c->outrefs)
         free(c->outrefs);
+    if (c->tests) {
+        for (size_t i = 0; i < c->ntests; ++i) {
+            free(c->tests[i].inps);
+            free(c->tests[i].outs);
+        }
+        free(c->tests);
+    }
     if (c->map)
-        free(c->map);
+        map_free(c->map, f);
     free(c);
 }
 
-int
+long
 acirc_const(acirc_t *c, size_t i)
 {
     return c->consts[i];
 }
 
-void *
-acirc_output(acirc_t *c, size_t i)
+static void *
+acirc_output(acirc_t *c, size_t i, acirc_copy_f f)
 {
-    return map_get(c->map, c->outrefs[i]);
+    void *res;
+
+    res = map_get(c->map, c->outrefs[i]);
+    return f ? f(res) : res;
 }
 
-int
+void **
 acirc_traverse(acirc_t *c, acirc_input_f input_f, acirc_const_f const_f,
-               acirc_eval_f eval_f, void *extra)
+               acirc_eval_f eval_f, acirc_copy_f copy_f, acirc_free_f free_f,
+               void *extra)
 {
-    jmp_buf env;
-    setjmp(env);
-    if (yyparse(c, input_f, const_f, eval_f, extra, NULL, env) != 0) {
+    void **outputs;
+    c->map = map_new();
+    if (yyparse(c, input_f, const_f, eval_f, extra, NULL) != 0) {
         fprintf(stderr, "error: parsing circuit failed\n");
-        return ACIRC_ERR;
+        return NULL;
     }
+    outputs = calloc(acirc_noutputs(c), sizeof outputs[0]);
+    for (size_t i = 0; i < acirc_noutputs(c); ++i) {
+        outputs[i] = acirc_output(c, i, copy_f);
+    }
+    map_free(c->map, free_f);
+    c->map = NULL;
     fseek(c->fp, 0, SEEK_SET);
-    return ACIRC_OK;
+    return outputs;
 }
 
 static void
-array_printstring(int *xs, size_t n)
+array_printstring(long *xs, size_t n)
 {
     for (size_t i = 0; i < n; ++i)
-        printf("%d", xs[i]);
+        printf("%ld", xs[i]);
 }
 
 bool
@@ -136,10 +149,12 @@ acirc_test(acirc_t *c)
 {
     bool ok = true;
     for (size_t t = 0; t < acirc_ntests(c); ++t) {
+        long *outputs;
         bool test_ok = true;
-        acirc_eval(c, acirc_test_input(c, t), NULL);
+
+        outputs = acirc_eval(c, acirc_test_input(c, t), NULL);
         for (size_t o = 0; o < acirc_noutputs(c); ++o) {
-            test_ok = test_ok && (((int) acirc_output(c, o)) == acirc_test_output(c, t)[o]);
+            test_ok = test_ok && (outputs[o] == acirc_test_output(c, t)[o]);
         }
 
         if (!test_ok)
@@ -150,13 +165,14 @@ acirc_test(acirc_t *c)
         array_printstring(acirc_test_output(c, t), acirc_noutputs(c));
         printf("\n\tgot:  ");
         for (size_t o = 0; o < acirc_noutputs(c); ++o) {
-            printf("%d", (int) acirc_output(c, o));
+            printf("%ld", outputs[o]);
         }
         if (!test_ok)
             printf("\033[0m");
         printf("\n");
 
         ok = ok && test_ok;
+        free(outputs);
     }
     return ok;
 }
@@ -175,7 +191,7 @@ acirc_eval_input(acirc_t *c, acirc_input_f f, ref_t ref, size_t inp, void *extra
 }
 
 int
-acirc_eval_const(acirc_t *c, acirc_const_f f, ref_t ref, int val, void *extra)
+acirc_eval_const(acirc_t *c, acirc_const_f f, ref_t ref, long val, void *extra)
 {
     if (f == NULL)
         return ACIRC_OK;
@@ -184,7 +200,7 @@ acirc_eval_const(acirc_t *c, acirc_const_f f, ref_t ref, int val, void *extra)
 }
 
 int
-acirc_eval_consts(acirc_t *c, int *vals, size_t n)
+acirc_eval_consts(acirc_t *c, long *vals, size_t n)
 {
     c->consts = vals;
     c->nconsts = n;
@@ -199,8 +215,8 @@ acirc_eval_outputs(acirc_t *c, ref_t *refs, size_t n)
     return ACIRC_OK;
 }
 
-static int
-char2int(char c)
+static long
+char2long(char c)
 {
     if (toupper(c) >= 'A' && toupper(c) <= 'Z')
         return toupper(c) - 'A' + 10;
@@ -224,13 +240,13 @@ acirc_eval_test(acirc_t *c, char *in, char *out)
         return ACIRC_ERR;
     }
     c->tests = realloc(c->tests, sizeof c->tests[0] * (c->ntests + 1));
-    c->tests[c->ntests].inps = calloc(acirc_ninputs(c), sizeof(int));
-    c->tests[c->ntests].outs = calloc(acirc_noutputs(c), sizeof(int));
+    c->tests[c->ntests].inps = calloc(acirc_ninputs(c), sizeof(long));
+    c->tests[c->ntests].outs = calloc(acirc_noutputs(c), sizeof(long));
     for (size_t i = 0; i < acirc_ninputs(c); ++i) {
-        c->tests[c->ntests].inps[i] = char2int(in[i]);
+        c->tests[c->ntests].inps[i] = char2long(in[i]);
     }
     for (size_t i = 0; i < acirc_noutputs(c); ++i) {
-        c->tests[c->ntests].outs[i] = char2int(out[i]);
+        c->tests[c->ntests].outs[i] = char2long(out[i]);
     }
     c->ntests++;
     return ACIRC_OK;
