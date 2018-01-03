@@ -1,5 +1,13 @@
+build/
 CMakeCache.txt
 CMakeFiles/
 *.cmake
 Makefile
 *.out
+*.so
+src/parse.c
+src/parse.h
+src/scan.c
+test_circ
+install_manifest.txt
+libthreadpool
