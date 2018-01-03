@@ -28,7 +28,7 @@ _eval_f(acirc_op op, void *x, void *y, void *_)
 }
 
 int
-acirc_depth(acirc_t *c)
+acirc_depths(acirc_t *c)
 {
     return acirc_traverse(c, _input_f, _const_f, _eval_f, NULL);
 }

@@ -54,7 +54,7 @@ struct ll {
     struct ll *ll;
 };
 
-%token NINPUTS NCONSTS TEST START INPUT CONST OUTPUTS ENDL
+%token NINPUTS CONSTS OUTPUTS TEST START INPUT CONST ENDL
 %token  <ref>           NUM
 %token  <op>            GATE
 %type   <ll>            numlist
@@ -66,7 +66,7 @@ struct ll {
 prog:           lines | prelim lines
                 ;
 
-prelim:         ninputs nconsts outputs start
+prelim:         ninputs consts outputs start
                 ;
 
 lines:          lines line | line
@@ -79,13 +79,6 @@ ninputs:        NINPUTS NUM ENDLS
                 {
                     if (!c->prelim)
                         c->ninputs = $2;
-                }
-                ;
-
-nconsts:        NCONSTS NUM ENDLS
-                {
-                    if (!c->prelim)
-                        c->nconsts = $2;
                 }
                 ;
 
@@ -138,6 +131,24 @@ numlist:       /* empty */
                     }
                     list->length++;
                     $$ = list;
+                }
+                ;
+
+consts:         CONSTS numlist ENDLS
+                {
+                    int *vals;
+                    struct ll *list = $2;
+                    struct ll_node *node = list->start;
+                    vals = calloc(list->length, sizeof vals[0]);
+                    for (size_t i = 0; i < list->length; ++i) {
+                        struct ll_node *tmp;
+                        vals[i] = node->data;
+                        tmp = node->next;
+                        free(node);
+                        node = tmp;
+                    }
+                acirc_eval_consts(c, vals, list->length);
+                free(list);
                 }
                 ;
 

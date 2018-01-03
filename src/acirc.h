@@ -26,14 +26,19 @@ typedef struct {
 
 acirc_t *acirc_new(const char *fname);
 void acirc_free(acirc_t *c);
+
 unsigned long acirc_ngates(acirc_t *c);
 unsigned long acirc_nmuls(acirc_t *c);
+
 int acirc_degrees(acirc_t *c);
 unsigned long acirc_max_degree(acirc_t *c);
-unsigned long acirc_const_degrees(acirc_t *c);
-unsigned long acirc_var_degrees(acirc_t *c, size_t k);
-unsigned long * acirc_depths(acirc_t *c);
+int acirc_const_degrees(acirc_t *c);
+unsigned long acirc_max_const_degree(acirc_t *c);
+int acirc_var_degrees(acirc_t *c, size_t k);
+unsigned long acirc_max_var_degrees(acirc_t *c, size_t k);
+int acirc_depths(acirc_t *c);
 unsigned long acirc_max_depth(acirc_t *c);
+unsigned long acirc_delta(acirc_t *c);
 
 int acirc_eval_mpz(acirc_t *c, mpz_t *xs, mpz_t *ys, mpz_t modulus);
 
@@ -43,6 +48,8 @@ int acirc_traverse(acirc_t *c, acirc_input_f input_f, acirc_const_f const_f,
 size_t acirc_ninputs(const acirc_t *c);
 size_t acirc_nconsts(const acirc_t *c);
 size_t acirc_noutputs(const acirc_t *c);
+
+int acirc_const(acirc_t *c, size_t i);
 void *acirc_output(acirc_t *c, size_t i);
 
 #endif

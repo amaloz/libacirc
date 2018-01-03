@@ -40,7 +40,6 @@ acirc_noutputs(const acirc_t *c)
 acirc_t *
 acirc_new(const char *fname)
 {
-    jmp_buf env;
     acirc_t *c;
 
     if ((c = calloc(1, sizeof c[0])) == NULL)
@@ -50,11 +49,14 @@ acirc_new(const char *fname)
         goto error;
     }
 
-    setjmp(env);
-    yyin = c->fp;
-    if (yyparse(c, NULL, NULL, NULL, NULL, NULL, env) != 0) {
-        fprintf(stderr, "error: parsing circuit failed\n");
-        goto error;
+    {
+        jmp_buf env;
+        setjmp(env);
+        yyin = c->fp;
+        if (yyparse(c, NULL, NULL, NULL, NULL, NULL, env) != 0) {
+            fprintf(stderr, "error: parsing circuit failed\n");
+            goto error;
+        }
     }
     c->map = map_new();
     return c;
@@ -75,6 +77,12 @@ acirc_free(acirc_t *c)
     if (c->map)
         free(c->map);
     free(c);
+}
+
+int
+acirc_const(acirc_t *c, size_t i)
+{
+    return c->consts[i];
 }
 
 void *
@@ -98,7 +106,7 @@ acirc_traverse(acirc_t *c, acirc_input_f input_f, acirc_const_f const_f,
 }
 
 /*
- * private circuit evaluation functions
+ * circuit parsing functions
  */
 
 int
@@ -118,6 +126,23 @@ acirc_eval_const(acirc_t *c, acirc_const_f f, ref_t ref, int val, void *extra)
     map_put(c->map, ref, f(ref, val, extra));
     return ACIRC_OK;
 }
+
+int
+acirc_eval_consts(acirc_t *c, int *vals, size_t n)
+{
+    c->consts = vals;
+    c->nconsts = n;
+    return ACIRC_OK;
+}
+
+int
+acirc_eval_outputs(acirc_t *c, ref_t *refs, size_t n)
+{
+    c->outrefs = refs;
+    c->noutputs = n;
+    return ACIRC_OK;
+}
+
 
 static void
 eval_worker(void *vargs)
@@ -155,14 +180,6 @@ acirc_eval_gate(acirc_t *c, acirc_eval_f f, acirc_op op, ref_t ref, ref_t x, ref
         _out = f(op, x_, y_, extra);
         map_put(c->map, ref, _out);
     }
-    return ACIRC_OK;
-}
-
-int
-acirc_eval_outputs(acirc_t *c, ref_t *refs, size_t n)
-{
-    c->outrefs = refs;
-    c->noutputs = n;
     return ACIRC_OK;
 }
 

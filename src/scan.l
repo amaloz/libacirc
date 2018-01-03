@@ -29,7 +29,7 @@ ADD|SUB|MUL|SET {
 
 [0-9]+     { yylval.ref = (ref_t) atoi(yytext); return NUM; }
 :ninputs   { return NINPUTS; }
-:nconsts   { return NCONSTS; }
+:consts    { return CONSTS; }
 :outputs   { return OUTPUTS; }
 :test      { return TEST; }
 :start     { return START; }
