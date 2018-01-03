@@ -21,14 +21,17 @@ const       { return CONST; }
 ADD|SUB|MUL|SET {
     yylval.op = acirc_str2op(yytext);
     return GATE;
-} 
+}
 
 \n       { return ENDL; }
 [ \r\t]+                        /* ignore whitespace */
 #.*\n                           /* ignore comments */
 
 [0-9]+     { yylval.ref = (ref_t) atoi(yytext); return NUM; }
+:ninputs   { return NINPUTS; }
+:nconsts   { return NCONSTS; }
 :outputs   { return OUTPUTS; }
 :test      { return TEST; }
+:start     { return START; }
 
 . { fprintf(stderr, "error: unrecognized character: %s\n", yytext); }

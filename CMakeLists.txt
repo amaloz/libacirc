@@ -16,6 +16,7 @@ BISON_TARGET(Parser src/parse.y ${CMAKE_CURRENT_SOURCE_DIR}/src/parse.c)
 
 set(acirc_SOURCES
   src/acirc.c
+  src/eval.c
   src/map.c
   ${FLEX_Scanner_OUTPUTS}
   ${BISON_Parser_OUTPUTS}
@@ -25,7 +26,7 @@ set(acirc_HEADERS
   )
 
 add_library(acirc SHARED ${acirc_SOURCES})
-target_link_libraries(acirc PUBLIC gmp)
+target_link_libraries(acirc PUBLIC threadpool gmp)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wpedantic -std=gnu11 -march=native")
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -pg -ggdb -O0")

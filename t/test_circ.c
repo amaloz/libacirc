@@ -6,8 +6,7 @@ int
 test(const char *fname)
 {
     acirc_t *c;
-    const size_t n = 80;
-    const size_t m = 80;
+    const size_t n = 128;
     int ret = 1;
 
     if ((c = acirc_new(fname)) == NULL) {
@@ -51,7 +50,7 @@ test(const char *fname)
     /* } */
 
     {
-        mpz_t *inputs[n], **outputs, modulus;
+        mpz_t *inputs[n], modulus;
         mpz_init_set_ui(modulus, 2377000);
         for (size_t i = 0; i < n; ++i) {
             inputs[i] = calloc(1, sizeof inputs[i][0]);
@@ -59,16 +58,15 @@ test(const char *fname)
             gmp_printf("%Zd ", inputs[i]);
         }
         printf("\n");
-        outputs = acirc_eval_mpz(c, inputs, n, m, modulus);
-        if (outputs) {
+        if (acirc_eval_mpz(c, inputs, n, modulus) == ACIRC_OK) {
+            mpz_t *output;
             printf("outputs: ");
-            for (size_t i = 0; i < m; ++i) {
-                gmp_printf("%Zd ", *outputs[i]);
+            while ((output = acirc_next_output(c)) != NULL) {
+                gmp_printf("%Zd ", *output);
+                mpz_clear(*output);
             }
             printf("\n");
-            free(outputs);
         }
-        acirc_reset(c);
     }
     acirc_free(c);
     return 0;
@@ -78,5 +76,5 @@ int
 main(int argc, char **argv)
 {
     (void) argc; (void) argv;
-    return test("t/circuits/aes.dsl.acirc");
+    return test("t/circuits/size_test.acirc");
 }
