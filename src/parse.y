@@ -50,12 +50,14 @@ struct ll {
 
 %union {
     ref_t ref;
+    char *str;
     acirc_op op;
     struct ll *ll;
 };
 
 %token NINPUTS CONSTS OUTPUTS TEST START INPUT CONST ENDL
 %token  <ref>           NUM
+%token  <str>           STR
 %token  <op>            GATE
 %type   <ll>            numlist
 
@@ -66,7 +68,17 @@ struct ll {
 prog:           lines | prelim lines
                 ;
 
-prelim:         ninputs consts outputs start
+prelim:         ninputs consts outputs tests start
+                ;
+
+tests:          | tests test | test
+                ;
+
+test:           TEST STR STR ENDL
+                {
+                    if (!c->prelim)
+                        acirc_eval_test(c, $2, $3);
+                }
                 ;
 
 lines:          lines line | line

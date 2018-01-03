@@ -2,6 +2,7 @@
 #include "parse.h"
 #include "map.h"
 
+#include <ctype.h>
 #include <setjmp.h>
 #include <stdlib.h>
 #include <string.h>
@@ -35,6 +36,24 @@ size_t
 acirc_noutputs(const acirc_t *c)
 {
     return c->noutputs;
+}
+
+size_t
+acirc_ntests(const acirc_t *c)
+{
+    return c->ntests;
+}
+
+int *
+acirc_test_input(const acirc_t *c, size_t i)
+{
+    return c->tests[i].inps;
+}
+
+int *
+acirc_test_output(const acirc_t *c, size_t i)
+{
+    return c->tests[i].outs;
 }
 
 acirc_t *
@@ -105,6 +124,43 @@ acirc_traverse(acirc_t *c, acirc_input_f input_f, acirc_const_f const_f,
     return ACIRC_OK;
 }
 
+static void
+array_printstring(int *xs, size_t n)
+{
+    for (size_t i = 0; i < n; ++i)
+        printf("%d", xs[i]);
+}
+
+bool
+acirc_test(acirc_t *c)
+{
+    bool ok = true;
+    for (size_t t = 0; t < acirc_ntests(c); ++t) {
+        bool test_ok = true;
+        acirc_eval(c, acirc_test_input(c, t), NULL);
+        for (size_t o = 0; o < acirc_noutputs(c); ++o) {
+            test_ok = test_ok && (((int) acirc_output(c, o)) == acirc_test_output(c, t)[o]);
+        }
+
+        if (!test_ok)
+            printf("\033[1;41m");
+        printf("test #%lu: ", t + 1);
+        array_printstring(acirc_test_input(c, t), acirc_ninputs(c));
+        printf("\n\twant: ");
+        array_printstring(acirc_test_output(c, t), acirc_noutputs(c));
+        printf("\n\tgot:  ");
+        for (size_t o = 0; o < acirc_noutputs(c); ++o) {
+            printf("%d", (int) acirc_output(c, o));
+        }
+        if (!test_ok)
+            printf("\033[0m");
+        printf("\n");
+
+        ok = ok && test_ok;
+    }
+    return ok;
+}
+
 /*
  * circuit parsing functions
  */
@@ -123,7 +179,7 @@ acirc_eval_const(acirc_t *c, acirc_const_f f, ref_t ref, int val, void *extra)
 {
     if (f == NULL)
         return ACIRC_OK;
-    map_put(c->map, ref, f(ref, val, extra));
+    map_put(c->map, ref, f(ref - acirc_ninputs(c), val, extra));
     return ACIRC_OK;
 }
 
@@ -140,6 +196,43 @@ acirc_eval_outputs(acirc_t *c, ref_t *refs, size_t n)
 {
     c->outrefs = refs;
     c->noutputs = n;
+    return ACIRC_OK;
+}
+
+static int
+char2int(char c)
+{
+    if (toupper(c) >= 'A' && toupper(c) <= 'Z')
+        return toupper(c) - 'A' + 10;
+    else if (c >= '0' && c <= '9')
+        return c - '0';
+    else {
+        fprintf(stderr, "error: invalid test input '%c'\n", c);
+        return -1;
+    }
+}
+
+int
+acirc_eval_test(acirc_t *c, char *in, char *out)
+{
+    if (strlen(in) != acirc_ninputs(c)) {
+        fprintf(stderr, "error: test input length ≠ %lu\n", acirc_ninputs(c));
+        return ACIRC_ERR;
+    }
+    if (strlen(out) != acirc_noutputs(c)) {
+        fprintf(stderr, "error: test output length ≠ %lu\n", acirc_noutputs(c));
+        return ACIRC_ERR;
+    }
+    c->tests = realloc(c->tests, sizeof c->tests[0] * (c->ntests + 1));
+    c->tests[c->ntests].inps = calloc(acirc_ninputs(c), sizeof(int));
+    c->tests[c->ntests].outs = calloc(acirc_noutputs(c), sizeof(int));
+    for (size_t i = 0; i < acirc_ninputs(c); ++i) {
+        c->tests[c->ntests].inps[i] = char2int(in[i]);
+    }
+    for (size_t i = 0; i < acirc_noutputs(c); ++i) {
+        c->tests[c->ntests].outs[i] = char2int(out[i]);
+    }
+    c->ntests++;
     return ACIRC_OK;
 }
 

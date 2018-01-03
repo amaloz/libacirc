@@ -5,34 +5,55 @@
 #include <setjmp.h>
 #include <stdlib.h>
 
+typedef struct {
+    int *xs;
+    int *ys;
+} eval_t;
 
-/* static void * */
-/* _acirc_eval(acirc_op op, void *x, void *y, void *_) */
-/* { */
-/*     (void) _; */
-/*     long x_, y_; */
-/*     x_ = (long) x; */
-/*     y_ = (long) y; */
-/*     switch (op) { */
-/*     case ACIRC_OP_ADD: */
-/*         return (void *) (x_ + y_); */
-/*     case ACIRC_OP_SUB: */
-/*         return (void *) (x_ - y_); */
-/*     case ACIRC_OP_MUL: */
-/*         return (void *) (x_ * y_); */
-/*     default: */
-/*         return NULL; */
-/*     } */
-/* } */
+static void *
+_acirc_input(size_t i, void *args_)
+{
+    eval_t *args = args_;
+    return (void *) args->xs[i];
+}
 
-/* long * */
-/* acirc_eval(acirc_t *c, long *inputs, size_t n) */
-/* { */
-/*     if (acirc_traverse(c, (void **) inputs, n, sizeof(long), _acirc_eval, NULL) == ACIRC_ERR) { */
-/*         return NULL; */
-/*     } */
-/*     return (long *) c->outputs; */
-/* } */
+static void *
+_acirc_const(size_t i, int val, void *args_)
+{
+    eval_t *args = args_;
+    if (args->ys) {
+        return (void *) args->ys[i];
+    } else {
+        return (void *) val;
+    }
+}
+
+static void *
+_acirc_eval(acirc_op op, void *x_, void *y_, void *_)
+{
+    (void) _;
+    int x, y;
+    x = (int) x_; y = (int) y_;
+    switch (op) {
+    case ACIRC_OP_ADD:
+        return (void *) (x + y);
+    case ACIRC_OP_SUB:
+        return (void *) (x - y);
+    case ACIRC_OP_MUL:
+        return (void *) (x * y);
+    default:
+        return NULL;
+    }
+}
+
+int
+acirc_eval(acirc_t *c, int *xs, int *ys)
+{
+    eval_t args;
+    args.xs = xs;
+    args.ys = ys;
+    return acirc_traverse(c, _acirc_input, _acirc_const, _acirc_eval, &args);
+}
 
 typedef struct {
     mpz_t *xs;

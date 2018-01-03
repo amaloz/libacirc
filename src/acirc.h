@@ -2,6 +2,7 @@
 #define __ACIRC_H__
 
 #include <gmp.h>
+#include <stdbool.h>
 #include <stdio.h>
 
 #define ACIRC_OK    0
@@ -40,6 +41,7 @@ int acirc_depths(acirc_t *c);
 unsigned long acirc_max_depth(acirc_t *c);
 unsigned long acirc_delta(acirc_t *c);
 
+int acirc_eval(acirc_t *c, int *xs, int *ys);
 int acirc_eval_mpz(acirc_t *c, mpz_t *xs, mpz_t *ys, mpz_t modulus);
 
 int acirc_traverse(acirc_t *c, acirc_input_f input_f, acirc_const_f const_f,
@@ -48,6 +50,12 @@ int acirc_traverse(acirc_t *c, acirc_input_f input_f, acirc_const_f const_f,
 size_t acirc_ninputs(const acirc_t *c);
 size_t acirc_nconsts(const acirc_t *c);
 size_t acirc_noutputs(const acirc_t *c);
+
+size_t acirc_ntests(const acirc_t *c);
+int * acirc_test_input(const acirc_t *c, size_t i);
+int * acirc_test_output(const acirc_t *c, size_t i);
+bool acirc_test(acirc_t *c);
+
 
 int acirc_const(acirc_t *c, size_t i);
 void *acirc_output(acirc_t *c, size_t i);

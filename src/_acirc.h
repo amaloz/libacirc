@@ -9,9 +9,9 @@ typedef size_t ref_t;
 typedef struct map_t map_t;
 
 typedef struct {
-    acirc_op op;
-    unsigned int x, y;
-} gate_t;
+    int *inps;
+    int *outs;
+} acirc_test_t;
 
 struct acirc_t {
     FILE *fp;
@@ -22,6 +22,8 @@ struct acirc_t {
     ref_t *outrefs;
     map_t *map;
     bool prelim;
+    acirc_test_t *tests;
+    size_t ntests;
 };
 
 acirc_op acirc_str2op(const char *str);
@@ -31,3 +33,4 @@ int acirc_eval_gate(acirc_t *c, acirc_eval_f f, acirc_op op, ref_t ref, ref_t x,
                     threadpool *pool, void *extra);
 int acirc_eval_consts(acirc_t *c, int *vals, size_t n);
 int acirc_eval_outputs(acirc_t *c, ref_t *refs, size_t n);
+int acirc_eval_test(acirc_t *c, char *in, char *out);

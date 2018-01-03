@@ -8,6 +8,8 @@ test(const char *fname)
     acirc_t *c;
     int ret = 1;
 
+    printf("\n* %s *\n\n", fname);
+
     if ((c = acirc_new(fname)) == NULL) {
         fprintf(stderr, "error: acirc_new failed\n");
         return ret;
@@ -36,6 +38,8 @@ test(const char *fname)
         depth = acirc_max_depth(c);
         printf("max depth: %lu\n", depth);
     }
+
+    acirc_test(c);
 
     {
         mpz_t xs[acirc_ninputs(c)], modulus;
@@ -68,5 +72,7 @@ int
 main(int argc, char **argv)
 {
     (void) argc; (void) argv;
-    return test("t/circuits/size_test.acirc");
+    int ok = 0;
+    ok |= test("t/circuits/test.acirc");
+    ok |= test("t/circuits/size_test.acirc");
 }
