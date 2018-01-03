@@ -6,7 +6,6 @@ int
 test(const char *fname)
 {
     acirc_t *c;
-    const size_t n = 128;
     int ret = 1;
 
     if ((c = acirc_new(fname)) == NULL) {
@@ -14,17 +13,23 @@ test(const char *fname)
         return ret;
     }
 
-    /* { */
-    /*     unsigned long *outputs; */
+    {
+        unsigned long count;
+        count = acirc_ngates(c);
+        printf("ngates: %lu\n", count);
+    }
 
-    /*     outputs = acirc_degrees(c, n, &m); */
-    /*     printf("degrees: "); */
-    /*     for (size_t i = 0; i < m; ++i) { */
-    /*         printf("%lu ", outputs[i]); */
-    /*     } */
-    /*     printf("\n"); */
-    /*     free(outputs); */
-    /*     acirc_reset(c); */
+    {
+        unsigned long count;
+        count = acirc_nmuls(c);
+        printf("nmuls: %lu\n", count);
+    }
+
+    {
+        unsigned long max;
+        max = acirc_max_degree(c);
+        printf("max degree: %lu\n", max);
+    }
 
     /*     outputs = acirc_depths(c, n, &m); */
     /*     printf("depth: "); */
@@ -50,18 +55,20 @@ test(const char *fname)
     /* } */
 
     {
-        mpz_t *inputs[n], modulus;
+        mpz_t *inputs[acirc_ninputs(c)], modulus;
         mpz_init_set_ui(modulus, 2377000);
-        for (size_t i = 0; i < n; ++i) {
+        printf("inputs: ");
+        for (size_t i = 0; i < acirc_ninputs(c); ++i) {
             inputs[i] = calloc(1, sizeof inputs[i][0]);
             mpz_init_set_ui(*inputs[i], 1);
             gmp_printf("%Zd ", inputs[i]);
         }
         printf("\n");
-        if (acirc_eval_mpz(c, inputs, n, modulus) == ACIRC_OK) {
+        if (acirc_eval_mpz(c, inputs, acirc_ninputs(c), modulus) == ACIRC_OK) {
             mpz_t *output;
             printf("outputs: ");
-            while ((output = acirc_next_output(c)) != NULL) {
+            for (size_t i = 0; i < acirc_noutputs(c); ++i) {
+                output = acirc_output(c, i);
                 gmp_printf("%Zd ", *output);
                 mpz_clear(*output);
             }

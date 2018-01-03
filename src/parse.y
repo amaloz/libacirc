@@ -77,19 +77,24 @@ line:           input | const | gate
 
 ninputs:        NINPUTS NUM ENDLS
                 {
-                    c->ninputs = $2;
+                    if (!c->prelim)
+                        c->ninputs = $2;
                 }
                 ;
 
 nconsts:        NCONSTS NUM ENDLS
                 {
-                    c->nconsts = $2;
+                    if (!c->prelim)
+                        c->nconsts = $2;
                 }
                 ;
 
 start:          START ENDL
                 {
-                    YYACCEPT;
+                    if (!c->prelim) {
+                        c->prelim = true;
+                        YYACCEPT;
+                    }
                 }
                 ;
 

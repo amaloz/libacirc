@@ -20,7 +20,19 @@ typedef struct {
 extern FILE *yyin;
 
 size_t
-acirc_noutputs(acirc_t *c)
+acirc_ninputs(const acirc_t *c)
+{
+    return c->ninputs;
+}
+
+size_t
+acirc_nconsts(const acirc_t *c)
+{
+    return c->nconsts;
+}
+
+size_t
+acirc_noutputs(const acirc_t *c)
 {
     return c->noutputs;
 }
@@ -28,13 +40,15 @@ acirc_noutputs(acirc_t *c)
 acirc_t *
 acirc_new(const char *fname)
 {
-    acirc_t *c;
     jmp_buf env;
+    acirc_t *c;
 
     if ((c = calloc(1, sizeof c[0])) == NULL)
         return NULL;
-    if ((c->fp = fopen(fname, "r")) == NULL)
+    if ((c->fp = fopen(fname, "r")) == NULL) {
+        fprintf(stderr, "error: unable to open file '%s'\n", fname);
         goto error;
+    }
 
     setjmp(env);
     yyin = c->fp;
@@ -42,7 +56,6 @@ acirc_new(const char *fname)
         fprintf(stderr, "error: parsing circuit failed\n");
         goto error;
     }
-
     c->map = map_new();
     return c;
 error:
@@ -65,11 +78,23 @@ acirc_free(acirc_t *c)
 }
 
 void *
-acirc_next_output(acirc_t *c)
+acirc_output(acirc_t *c, size_t i)
 {
-    if (c->nread >= c->noutputs)
-        return NULL;
-    return map_get(c->map, c->outrefs[c->nread++]);
+    return map_get(c->map, c->outrefs[i]);
+}
+
+int
+acirc_traverse(acirc_t *c, acirc_input_f input_f, acirc_const_f const_f,
+               acirc_eval_f eval_f, void *extra)
+{
+    jmp_buf env;
+    setjmp(env);
+    if (yyparse(c, input_f, const_f, eval_f, extra, NULL, env) != 0) {
+        fprintf(stderr, "error: parsing circuit failed\n");
+        return ACIRC_ERR;
+    }
+    fseek(c->fp, 0, SEEK_SET);
+    return ACIRC_OK;
 }
 
 /*
@@ -79,6 +104,8 @@ acirc_next_output(acirc_t *c)
 int
 acirc_eval_input(acirc_t *c, acirc_input_f f, ref_t ref, size_t inp, void *extra)
 {
+    if (f == NULL)
+        return ACIRC_OK;
     map_put(c->map, ref, f(inp, extra));
     return ACIRC_OK;
 }
@@ -86,6 +113,8 @@ acirc_eval_input(acirc_t *c, acirc_input_f f, ref_t ref, size_t inp, void *extra
 int
 acirc_eval_const(acirc_t *c, acirc_const_f f, ref_t ref, int val, void *extra)
 {
+    if (f == NULL)
+        return ACIRC_OK;
     map_put(c->map, ref, f(val, extra));
     return ACIRC_OK;
 }

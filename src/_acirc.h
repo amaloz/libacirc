@@ -1,6 +1,8 @@
 #pragma once
 
 #include "acirc.h"
+
+#include <stdbool.h>
 #include <threadpool.h>
 
 typedef unsigned int ref_t;
@@ -13,14 +15,13 @@ typedef struct {
 
 struct acirc_t {
     FILE *fp;
-    size_t elemsize;
     size_t ninputs;
     size_t nconsts;
     size_t noutputs;
-    void **inputs;
     ref_t *outrefs;
     size_t nread;
     map_t *map;
+    bool prelim;
 };
 
 acirc_op acirc_str2op(const char *str);

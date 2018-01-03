@@ -16,6 +16,10 @@ BISON_TARGET(Parser src/parse.y ${CMAKE_CURRENT_SOURCE_DIR}/src/parse.c)
 
 set(acirc_SOURCES
   src/acirc.c
+  src/degree.c
+  src/depth.c
+  src/ngates.c
+  src/nmuls.c
   src/eval.c
   src/map.c
   ${FLEX_Scanner_OUTPUTS}
