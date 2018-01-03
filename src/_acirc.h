@@ -5,6 +5,8 @@
 #include <stdbool.h>
 #include <threadpool.h>
 
+#pragma GCC visibility push(hidden)
+
 typedef size_t ref_t;
 typedef struct map_t map_t;
 
@@ -34,3 +36,5 @@ int acirc_eval_gate(acirc_t *c, acirc_eval_f f, acirc_op op, ref_t ref, ref_t x,
 int acirc_eval_consts(acirc_t *c, int *vals, size_t n);
 int acirc_eval_outputs(acirc_t *c, ref_t *refs, size_t n);
 int acirc_eval_test(acirc_t *c, char *in, char *out);
+
+#pragma GCC visibility pop
