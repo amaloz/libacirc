@@ -74,12 +74,12 @@ acirc_new(const char *fname)
     }
     return c;
 error:
-    acirc_free(c, NULL);
+    acirc_free(c);
     return NULL;
 }
 
 void
-acirc_free(acirc_t *c, acirc_free_f f)
+acirc_free(acirc_t *c)
 {
     if (c == NULL)
         return;
@@ -96,8 +96,6 @@ acirc_free(acirc_t *c, acirc_free_f f)
         }
         free(c->tests);
     }
-    if (c->map)
-        map_free(c->map, f);
     free(c);
 }
 
@@ -105,15 +103,6 @@ long
 acirc_const(acirc_t *c, size_t i)
 {
     return c->consts[i];
-}
-
-static void *
-acirc_output(acirc_t *c, size_t i, acirc_copy_f f)
-{
-    void *res;
-
-    res = map_get(c->map, c->outrefs[i]);
-    return f ? f(res) : res;
 }
 
 void **
@@ -129,9 +118,10 @@ acirc_traverse(acirc_t *c, acirc_input_f input_f, acirc_const_f const_f,
     }
     outputs = calloc(acirc_noutputs(c), sizeof outputs[0]);
     for (size_t i = 0; i < acirc_noutputs(c); ++i) {
-        outputs[i] = acirc_output(c, i, copy_f);
+        void *out = map_get(c->map, c->outrefs[i]);
+        outputs[i] = copy_f ? copy_f(out, extra) : out;
     }
-    map_free(c->map, free_f);
+    map_free(c->map, free_f, extra);
     c->map = NULL;
     fseek(c->fp, 0, SEEK_SET);
     return outputs;

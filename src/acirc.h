@@ -17,8 +17,8 @@ typedef enum {
 typedef void * (*acirc_input_f)(size_t, void *);
 typedef void * (*acirc_const_f)(size_t, long, void *);
 typedef void * (*acirc_eval_f)(acirc_op, void *, void *, void *);
-typedef void * (*acirc_copy_f)(void *);
-typedef void (*acirc_free_f)(void *);
+typedef void * (*acirc_copy_f)(void *, void *);
+typedef void (*acirc_free_f)(void *, void *);
 
 typedef struct {
     acirc_input_f input_f;
@@ -28,7 +28,7 @@ typedef struct {
 } acirc_parse_t;
 
 acirc_t *acirc_new(const char *fname);
-void acirc_free(acirc_t *c, acirc_free_f f);
+void acirc_free(acirc_t *c);
 
 long acirc_ngates(acirc_t *c);
 long acirc_nmuls(acirc_t *c);
@@ -38,7 +38,7 @@ long acirc_max_degree(acirc_t *c);
 long * acirc_const_degrees(acirc_t *c);
 long acirc_max_const_degree(acirc_t *c);
 long * acirc_var_degrees(acirc_t *c, size_t k);
-long acirc_max_var_degrees(acirc_t *c, size_t k);
+long acirc_max_var_degree(acirc_t *c, size_t k);
 long * acirc_depths(acirc_t *c);
 long acirc_max_depth(acirc_t *c);
 long acirc_delta(acirc_t *c);

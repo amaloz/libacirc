@@ -102,13 +102,15 @@ _acirc_eval_mpz(acirc_op op, void *x_, void *y_, void *args)
         mpz_mul(*rop, *x, *y);
         break;
     }
-    mpz_mod(*rop, *rop, *modulus);
+    if (mpz_cmp_ui(*modulus, 0) != 0)
+        mpz_mod(*rop, *rop, *modulus);
     return (void *) rop;
 }
 
 static void *
-_acirc_copy_mpz(void *x_)
+_acirc_copy_mpz(void *x_, void *_)
 {
+    (void) _;
     mpz_t *out;
     out = calloc(1, sizeof out[0]);
     mpz_init_set(*out, x_);
@@ -116,8 +118,9 @@ _acirc_copy_mpz(void *x_)
 }
 
 static void
-_acirc_free_mpz(void *x_)
+_acirc_free_mpz(void *x_, void *_)
 {
+    (void) _;
     if (x_) {
         mpz_clear(x_);
         free(x_);
@@ -138,6 +141,6 @@ acirc_eval_mpz(acirc_t *c, mpz_t **xs, mpz_t **ys, mpz_t modulus)
 void
 acirc_eval_mpz_free(acirc_t *c)
 {
-    map_free(c->map, _acirc_free_mpz);
+    map_free(c->map, _acirc_free_mpz, NULL);
     c->map = NULL;
 }

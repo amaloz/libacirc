@@ -67,7 +67,7 @@ test(const char *fname)
         mpz_clear(modulus);
     }
 
-    acirc_free(c, NULL);
+    acirc_free(c);
     return 0;
 }
 
