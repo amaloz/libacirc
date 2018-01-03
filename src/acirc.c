@@ -115,7 +115,7 @@ acirc_eval_const(acirc_t *c, acirc_const_f f, ref_t ref, int val, void *extra)
 {
     if (f == NULL)
         return ACIRC_OK;
-    map_put(c->map, ref, f(val, extra));
+    map_put(c->map, ref, f(ref, val, extra));
     return ACIRC_OK;
 }
 

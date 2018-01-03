@@ -4,16 +4,31 @@
 #include <stdlib.h>
 
 static void *
-_input_f(size_t inp, void *extra)
+_input_zero_f(size_t i, void *extra)
 {
-    (void) inp; (void) extra;
+    (void) i; (void) extra;
+    return (void *) 0;
+}
+
+
+static void *
+_input_one_f(size_t i, void *extra)
+{
+    (void) i; (void) extra;
     return (void *) 1;
 }
 
 static void *
-_const_f(int val, void *extra)
+_const_zero_f(size_t i, int val, void *extra)
 {
-    (void) val; (void) extra;
+    (void) i; (void) val; (void) extra;
+    return (void *) 0;
+}
+
+static void *
+_const_one_f(size_t i, int val, void *extra)
+{
+    (void) i; (void) val; (void) extra;
     return (void *) 1;
 }
 
@@ -37,7 +52,7 @@ _eval_f(acirc_op op, void *x, void *y, void *_)
 int
 acirc_degrees(acirc_t *c)
 {
-    return acirc_traverse(c, _input_f, _const_f, _eval_f, NULL);
+    return acirc_traverse(c, _input_one_f, _const_one_f, _eval_f, NULL);
 }
 
 unsigned long
@@ -53,4 +68,24 @@ acirc_max_degree(acirc_t *c)
             max = output;
     }
     return max;
+}
+
+unsigned long
+acirc_const_degrees(acirc_t *c)
+{
+    return acirc_traverse(c, _input_zero_f, _const_one_f, _eval_f, NULL);
+}
+
+static void *
+_input_var_f(size_t i, void *extra)
+{
+    const size_t k = *((size_t *) extra);
+    return (void *) (i == k ? 1 : 0);
+}
+
+
+unsigned long
+acirc_var_degrees(acirc_t *c, size_t k)
+{
+    return acirc_traverse(c, _input_var_f, _const_zero_f, _eval_f, &k);
 }

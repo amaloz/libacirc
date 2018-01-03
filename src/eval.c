@@ -35,55 +35,62 @@
 /* } */
 
 typedef struct {
-    mpz_t **inputs;
+    mpz_t *xs;
+    mpz_t *ys;
     mpz_t *modulus;
 } eval_mpz_t;
 
 static void *
-_acirc_input_mpz(size_t id, void *extra)
+_acirc_input_mpz(size_t id, void *args)
 {
-    eval_mpz_t *s = extra;
-    return (void *) s->inputs[id];
+    eval_mpz_t *s = args;
+    return (void *) s->xs[id];
 }
 
 static void *
-_acirc_const_mpz(int val, void *_)
+_acirc_const_mpz(size_t id, int val, void *args)
 {
-    (void) _;
-    mpz_t *x;
-    x = calloc(1, sizeof x[0]);
-    mpz_init_set_si(*x, val);
-    return x;
+    eval_mpz_t *s = args;
+    if (s->ys) {
+        return (void *) s->ys[id];
+    } else {
+        mpz_t *x;
+        x = calloc(1, sizeof x[0]);
+        mpz_init_set_si(*x, val);
+        return x;
+    }
 }
 
 static void *
-_acirc_eval_mpz(acirc_op op, void *x, void *y, void *modulus)
+_acirc_eval_mpz(acirc_op op, void *x_, void *y_, void *args)
 {
-    mpz_t *x_, *y_, *modulus_, *rop;
-    x_ = (mpz_t *) x; y_ = (mpz_t *) y; modulus_ = (mpz_t *) modulus;
+    eval_mpz_t *s = args;
+    mpz_t *x, *y, *modulus, *rop;
+    x = x_; y = y_; modulus = s->modulus;
 
     rop = calloc(1, sizeof rop[0]);
     mpz_init(*rop);
     switch (op) {
     case ACIRC_OP_ADD:
-        mpz_add(*rop, *x_, *y_);
+        mpz_add(*rop, *x, *y);
         break;
     case ACIRC_OP_SUB:
-        mpz_sub(*rop, *x_, *y_);
+        mpz_sub(*rop, *x, *y);
         break;
     case ACIRC_OP_MUL:
-        mpz_mul(*rop, *x_, *y_);
+        mpz_mul(*rop, *x, *y);
         break;
     }
-    mpz_mod(*rop, *rop, *modulus_);
+    mpz_mod(*rop, *rop, *modulus);
     return (void *) rop;
 }
 
 int
-acirc_eval_mpz(acirc_t *c, mpz_t **inputs, size_t n, mpz_t modulus)
+acirc_eval_mpz(acirc_t *c, mpz_t *xs, mpz_t *ys, mpz_t modulus)
 {
     eval_mpz_t s;
-    s.inputs = inputs;
+    s.xs = xs;
+    s.ys = ys;
     s.modulus = &modulus;
     return acirc_traverse(c, _acirc_input_mpz, _acirc_const_mpz, _acirc_eval_mpz, &s);
 }

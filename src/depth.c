@@ -4,16 +4,16 @@
 #include <stdlib.h>
 
 static void *
-_input_f(size_t inp, void *extra)
+_input_f(size_t i, void *extra)
 {
-    (void) inp; (void) extra;
+    (void) i; (void) extra;
     return (void *) 0;
 }
 
 static void *
-_const_f(int val, void *extra)
+_const_f(size_t i, int val, void *extra)
 {
-    (void) val; (void) extra;
+    (void) i; (void) val; (void) extra;
     return (void *) 0;
 }
 
