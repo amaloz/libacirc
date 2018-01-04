@@ -1,19 +1,21 @@
 #include "_acirc.h"
 #include "parse.h"
-#include "map.h"
 
+#include <assert.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 
 typedef struct {
     acirc_eval_f eval;
-    threadpool *pool;
-    map_t *map;
+    acirc_free_f free;
+    pthread_mutex_t *lock;
+    storage_t *map;
     acirc_op op;
     ref_t ref;
-    void *x;
-    void *y;
+    ssize_t count;
+    ref_t xref;
+    ref_t yref;
     void *extra;
 } eval_args_t;
 
@@ -66,6 +68,7 @@ acirc_new(const char *fname)
         fprintf(stderr, "error: unable to open file '%s'\n", fname);
         goto error;
     }
+    pthread_mutex_init(&c->storage_lock, NULL);
 
     yyin = c->fp;
     if (yyparse(c, NULL, NULL, NULL, NULL, NULL) != 0) {
@@ -96,6 +99,7 @@ acirc_free(acirc_t *c)
         }
         free(c->tests);
     }
+    pthread_mutex_destroy(&c->storage_lock);
     free(c);
 }
 
@@ -108,21 +112,32 @@ acirc_const(acirc_t *c, size_t i)
 void **
 acirc_traverse(acirc_t *c, acirc_input_f input_f, acirc_const_f const_f,
                acirc_eval_f eval_f, acirc_copy_f copy_f, acirc_free_f free_f,
-               void *extra)
+               void *extra, size_t nthreads)
 {
     void **outputs;
-    c->map = map_new();
-    if (yyparse(c, input_f, const_f, eval_f, extra, NULL) != 0) {
+
+    storage_init(&c->map);
+    if (nthreads)
+        c->pool = threadpool_create(nthreads);
+    if (yyparse(c, input_f, const_f, eval_f, free_f, extra) != 0) {
         fprintf(stderr, "error: parsing circuit failed\n");
         return NULL;
     }
+    if (nthreads)
+        threadpool_destroy(c->pool);
+
     outputs = calloc(acirc_noutputs(c), sizeof outputs[0]);
     for (size_t i = 0; i < acirc_noutputs(c); ++i) {
-        void *out = map_get(c->map, c->outrefs[i]);
+        bool done = false;
+        void *out = storage_get(&c->map, c->outrefs[i], &done);
         outputs[i] = copy_f ? copy_f(out, extra) : out;
+        if (done) {
+            storage_remove_item(&c->map, c->outrefs[i]);
+            if (free_f)
+                free_f(out, extra);
+        }
     }
-    map_free(c->map, free_f, extra);
-    c->map = NULL;
+    storage_clear(&c->map, free_f, extra);
     fseek(c->fp, 0, SEEK_SET);
     return outputs;
 }
@@ -172,23 +187,25 @@ acirc_test(acirc_t *c)
  */
 
 int
-acirc_eval_input(acirc_t *c, acirc_input_f f, ref_t ref, size_t inp, void *extra)
+acirc_eval_input(acirc_t *c, acirc_input_f f, ref_t ref, size_t inp, ssize_t count, void *extra)
 {
-    if (f == NULL)
-        return ACIRC_OK;
-    map_put(c->map, ref, f(inp, extra));
-    return ACIRC_OK;
+    void *value;
+    value = f ? f(inp, extra) : NULL;
+    return storage_put(&c->map, ref, value, count);
 }
 
 int
-acirc_eval_const(acirc_t *c, acirc_const_f f, ref_t ref, void *extra)
+acirc_eval_const(acirc_t *c, acirc_const_f f, ref_t ref, ssize_t count, void *extra)
 {
-    if (f == NULL)
-        return ACIRC_OK;
-    map_put(c->map, ref, f(c->_nconsts, c->consts[c->_nconsts], extra));
-    if (++c->_nconsts == c->nconsts)
-        c->_nconsts = 0;
-    return ACIRC_OK;
+    void *value;
+    if (f) {
+        value = f(c->_nconsts, c->consts[c->_nconsts], extra);
+        if (++c->_nconsts == c->nconsts)
+            c->_nconsts = 0;
+    } else {
+        value = NULL;
+    }
+    return storage_put(&c->map, ref, value, count);
 }
 
 int
@@ -248,17 +265,92 @@ acirc_eval_test(acirc_t *c, char *in, char *out)
 static void
 eval_worker(void *vargs)
 {
-    void *out;
+    void *out, *x = NULL, *y = NULL;
+    bool x_done = false, y_done = false;
     eval_args_t *args = vargs;
 
-    out = args->eval(args->op, args->x, args->y, args->extra);
+    while (x == NULL) {
+        pthread_mutex_lock(args->lock);
+        x = storage_get(args->map, args->xref, &x_done);
+        pthread_mutex_unlock(args->lock);
+    }
+    while (y == NULL) {
+        pthread_mutex_lock(args->lock);
+        y = storage_get(args->map, args->yref, &y_done);
+        pthread_mutex_unlock(args->lock);
+    }
+
+    out = args->eval(args->op, x, y, args->extra);
+
     {
-        map_put(args->map, args->ref, out);
+        pthread_mutex_lock(args->lock);
+        x_done = storage_update_item_count(args->map, args->xref);
+        y_done = storage_update_item_count(args->map, args->yref);
+        pthread_mutex_unlock(args->lock);
+    }
+
+    {
+        pthread_mutex_lock(args->lock);
+        storage_put(args->map, args->ref, out, args->count);
+        pthread_mutex_unlock(args->lock);
+    }
+
+    if (x_done) {
+        pthread_mutex_lock(args->lock);
+        storage_remove_item(args->map, args->xref);
+        pthread_mutex_unlock(args->lock);
+        if (args->free)
+            args->free(x, args->extra);
+    }
+    if (y_done) {
+        pthread_mutex_lock(args->lock);
+        storage_remove_item(args->map, args->yref);
+        pthread_mutex_unlock(args->lock);
+        if (args->free)
+            args->free(y, args->extra);
     }
     free(args);
 }
 
-static
+int
+acirc_eval_gate(acirc_t *c, acirc_eval_f eval_f, acirc_free_f free_f, acirc_op op,
+                ref_t ref, ref_t xref, ref_t yref, ssize_t count, void *extra)
+{
+    bool x_done = false, y_done = false;
+    if (c->pool) {
+        eval_args_t *args;
+        args = calloc(1, sizeof args[0]);
+        args->lock = &c->storage_lock;
+        args->eval = eval_f;
+        args->free = free_f;
+        args->map = &c->map;
+        args->op = op;
+        args->ref = ref;
+        args->count = count;
+        args->xref = xref;
+        args->yref = yref;
+        args->extra = extra;
+        threadpool_add_job(c->pool, eval_worker, args);
+    } else {
+        void *x, *y, *out;
+        x = storage_get(&c->map, xref, &x_done);
+        y = storage_get(&c->map, yref, &y_done);
+        out = eval_f(op, x, y, extra);
+        storage_put(&c->map, ref, out, count);
+        if (x_done) {
+            storage_remove_item(&c->map, xref);
+            if (free_f)
+                free_f(x, extra);
+        }
+        if (y_done) {
+            storage_remove_item(&c->map, yref);
+            if (free_f)
+                free_f(y, extra);
+        }
+    }
+    return ACIRC_OK;
+}
+
 char *
 acirc_op2str(acirc_op op)
 {
@@ -271,33 +363,6 @@ acirc_op2str(acirc_op op)
         return "MUL";
     }
     return "";
-}
-
-int
-acirc_eval_gate(acirc_t *c, acirc_eval_f f, acirc_op op, ref_t ref, ref_t x, ref_t y,
-                threadpool *pool, void *extra)
-{
-    void *x_, *y_, *_out;
-    x_ = map_get(c->map, x);
-    y_ = map_get(c->map, y);
-    if (pool) {
-        eval_args_t *args;
-        args = calloc(1, sizeof args[0]);
-        args->eval = f;
-        args->pool = pool;
-        args->map = c->map;
-        args->op = op;
-        args->ref = ref;
-        args->x = x_;
-        args->y = y_;
-        args->extra = extra;
-        threadpool_add_job(pool, eval_worker, args);
-    } else {
-        _out = f(op, x_, y_, extra);
-        /* printf("%s %lu %lu %lu\n", acirc_op2str(op), x_, y_, _out); */
-        map_put(c->map, ref, _out);
-    }
-    return ACIRC_OK;
 }
 
 acirc_op

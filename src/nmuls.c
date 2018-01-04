@@ -1,11 +1,10 @@
 #include "_acirc.h"
 #include "parse.h"
-#include "map.h"
 
 #include <stdlib.h>
 
 static void *
-_eval_f(acirc_op op, void *x, void *y, void *count_)
+_eval_f(acirc_op op, const void *x, const void *y, void *count_)
 {
     (void) x; (void) y;
     long *count = count_;
@@ -20,7 +19,7 @@ acirc_nmuls(acirc_t *c)
     void **outputs;
     long count = 0;
 
-    outputs = acirc_traverse(c, NULL, NULL, _eval_f, NULL, NULL, &count);
+    outputs = acirc_traverse(c, NULL, NULL, _eval_f, NULL, NULL, &count, 0);
     free(outputs);
     return count;
 }

@@ -1,6 +1,5 @@
 #include "_acirc.h"
 #include "parse.h"
-#include "map.h"
 
 #include <setjmp.h>
 #include <stdlib.h>
@@ -29,7 +28,7 @@ _acirc_const(size_t i, long val, void *args_)
 }
 
 static void *
-_acirc_eval(acirc_op op, void *x_, void *y_, void *_)
+_acirc_eval(acirc_op op, const void *x_, const void *y_, void *_)
 {
     (void) _;
     long x, y;
@@ -52,7 +51,7 @@ acirc_eval(acirc_t *c, long *xs, long *ys)
     eval_t args;
     args.xs = xs;
     args.ys = ys;
-    return (long *) acirc_traverse(c, _acirc_input, _acirc_const, _acirc_eval, NULL, NULL, &args);
+    return (long *) acirc_traverse(c, _acirc_input, _acirc_const, _acirc_eval, NULL, NULL, &args, 0);
 }
 
 typedef struct {
@@ -83,11 +82,13 @@ _acirc_const_mpz(size_t i, long val, void *args)
 }
 
 static void *
-_acirc_eval_mpz(acirc_op op, void *x_, void *y_, void *args_)
+_acirc_eval_mpz(acirc_op op, const void *x_, const void *y_, void *args_)
 {
     eval_mpz_t *args = args_;
-    mpz_t *x, *y, *modulus, *rop;
-    x = x_; y = y_; modulus = args->modulus;
+    const mpz_t *x = (const mpz_t *) x_;
+    const mpz_t *y = (const mpz_t *) y_;
+    mpz_t *modulus, *rop;
+    modulus = args->modulus;
 
     rop = calloc(1, sizeof rop[0]);
     mpz_init(*rop);
@@ -133,14 +134,7 @@ acirc_eval_mpz(acirc_t *c, mpz_t **xs, mpz_t **ys, mpz_t modulus)
     eval_mpz_t s;
     s.xs = xs;
     s.ys = ys;
-    s.modulus = modulus;
+    s.modulus = (mpz_t *) modulus;
     return (mpz_t **) acirc_traverse(c, _acirc_input_mpz, _acirc_const_mpz,
-                                     _acirc_eval_mpz, _acirc_copy_mpz, _acirc_free_mpz, &s);
-}
-
-void
-acirc_eval_mpz_free(acirc_t *c)
-{
-    map_free(c->map, _acirc_free_mpz, NULL);
-    c->map = NULL;
+                                     _acirc_eval_mpz, _acirc_copy_mpz, _acirc_free_mpz, &s, 0);
 }

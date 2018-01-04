@@ -16,7 +16,7 @@ typedef enum {
 } acirc_op;
 typedef void * (*acirc_input_f)(size_t, void *);
 typedef void * (*acirc_const_f)(size_t, long, void *);
-typedef void * (*acirc_eval_f)(acirc_op, void *, void *, void *);
+typedef void * (*acirc_eval_f)(acirc_op, const void *, const void *, void *);
 typedef void * (*acirc_copy_f)(void *, void *);
 typedef void (*acirc_free_f)(void *, void *);
 
@@ -45,11 +45,10 @@ long acirc_delta(acirc_t *c);
 
 long * acirc_eval(acirc_t *c, long *xs, long *ys);
 mpz_t ** acirc_eval_mpz(acirc_t *c, mpz_t **xs, mpz_t **ys, mpz_t modulus);
-void acirc_eval_mpz_free(acirc_t *c);
 
 void ** acirc_traverse(acirc_t *c, acirc_input_f input_f, acirc_const_f const_f,
                        acirc_eval_f eval_f, acirc_copy_f copy_f, acirc_free_f free_f,
-                       void *extra);
+                       void *extra, size_t nthreads);
 
 size_t acirc_ninputs(const acirc_t *c);
 size_t acirc_nconsts(const acirc_t *c);

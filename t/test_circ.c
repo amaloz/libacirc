@@ -15,6 +15,10 @@ test(const char *fname)
         return ret;
     }
 
+    printf("ninputs: %lu\n", acirc_ninputs(c));
+    printf("nconsts: %lu\n", acirc_nconsts(c));
+    printf("noutputs: %lu\n", acirc_noutputs(c));
+
     {
         unsigned long count;
         count = acirc_ngates(c);
@@ -79,6 +83,8 @@ main(int argc, char **argv)
     ok |= test("t/circuits/test.acirc");
     ok |= test("t/circuits/add.acirc");
     ok |= test("t/circuits/simple.acirc");
-    ok |= test("t/circuits/ggm_10_10.dsl.acirc");
+    ok |= test("t/circuits/ggm_1_4.dsl.acirc");
+    ok |= test("t/circuits/ggm_4_4.dsl.acirc");
+    ok |= test("t/circuits/ggm_1_32.dsl.acirc");
     return ok;
 }
