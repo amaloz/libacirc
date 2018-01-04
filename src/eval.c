@@ -69,11 +69,11 @@ _acirc_input_mpz(size_t i, void *args)
 }
 
 static void *
-_acirc_const_mpz(size_t id, long val, void *args)
+_acirc_const_mpz(size_t i, long val, void *args)
 {
     eval_mpz_t *s = args;
     if (s->ys) {
-        return (void *) s->ys[id];
+        return (void *) s->ys[i];
     } else {
         mpz_t *x;
         x = calloc(1, sizeof x[0]);

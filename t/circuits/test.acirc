@@ -7,8 +7,8 @@
 :start
 0 input 0
 1 input 1
-2 const 0
-3 const 1
+2 const
+3 const
 4 ADD 0 1
 5 ADD 2 4
 6 SUB 5 3

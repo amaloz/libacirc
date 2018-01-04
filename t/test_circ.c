@@ -78,6 +78,7 @@ main(int argc, char **argv)
     int ok = 0;
     ok |= test("t/circuits/test.acirc");
     ok |= test("t/circuits/add.acirc");
-    /* ok |= test("t/circuits/size_test.acirc"); */
+    ok |= test("t/circuits/simple.acirc");
+    ok |= test("t/circuits/ggm_10_10.dsl.acirc");
     return ok;
 }

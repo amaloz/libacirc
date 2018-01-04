@@ -36,7 +36,7 @@ int
 map_put(map_t *m, ref_t ref, void *value)
 {
     if (ref >= m->n) {
-        m->n *= 2;
+        m->n = ref + 1;
         m->values = realloc(m->values, m->n * sizeof m->values[0]);
     }
     m->values[ref] = value;

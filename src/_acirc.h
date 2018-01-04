@@ -20,17 +20,20 @@ struct acirc_t {
     size_t ninputs;
     size_t nconsts;
     size_t noutputs;
+    size_t symlen;
+    size_t base;
     long *consts;
     ref_t *outrefs;
     map_t *map;
-    bool prelim;
+    bool circuit;
     acirc_test_t *tests;
     size_t ntests;
+    size_t _nconsts;
 };
 
 acirc_op acirc_str2op(const char *str);
 int acirc_eval_input(acirc_t *c, acirc_input_f f, ref_t ref, size_t inp, void *extra);
-int acirc_eval_const(acirc_t *c, acirc_const_f f, ref_t ref, long val, void *extra);
+int acirc_eval_const(acirc_t *c, acirc_const_f f, ref_t ref, void *extra);
 int acirc_eval_gate(acirc_t *c, acirc_eval_f f, acirc_op op, ref_t ref, ref_t x, ref_t y,
                     threadpool *pool, void *extra);
 int acirc_eval_consts(acirc_t *c, long *vals, size_t n);

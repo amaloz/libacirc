@@ -52,7 +52,7 @@ struct ll {
     struct ll *ll;
 };
 
-%token NINPUTS CONSTS OUTPUTS TEST START INPUT CONST ENDL
+%token NINPUTS CONSTS OUTPUTS SECRETS SYMLEN BASE TEST START INPUT CONST ENDL COLON
 %token  <ref>           NUM
 %token  <str>           STR
 %token  <op>            GATE
@@ -65,18 +65,46 @@ struct ll {
 prog:           lines | prelims start lines
                 ;
 
-prelims:        ninputs consts outputs tests
+prelims:        ninputs consts outputs secrets symlen base tests
                 ;
 
-tests:          | tests test | test
+ninputs:        NINPUTS NUM ENDL
+                {
+                    if (!c->circuit)
+                        c->ninputs = $2;
+                }
+                ;
+
+symlen:         %empty | SYMLEN NUM ENDL
+                {
+                    c->symlen = $2;
+                }
+                ;
+
+base:           %empty | BASE NUM ENDL
+                {
+                    c->base = $2;
+                }
+                ;
+
+tests:          %empty | tests test | test
                 ;
 
 test:           TEST STR STR ENDL
                 {
-                    if (!c->prelim)
+                    if (!c->circuit)
                         acirc_eval_test(c, $2, $3);
                     free($2);
                     free($3);
+                }
+                ;
+
+start:          START ENDL
+                {
+                    if (!c->circuit) {
+                        c->circuit = true;
+                        YYACCEPT;
+                    }
                 }
                 ;
 
@@ -86,22 +114,6 @@ lines:          lines line | line
 line:           input | const | gate
                 ;
 
-ninputs:        NINPUTS NUM ENDL
-                {
-                    if (!c->prelim)
-                        c->ninputs = $2;
-                }
-                ;
-
-start:          START ENDL
-                {
-                    if (!c->prelim) {
-                        c->prelim = true;
-                        YYACCEPT;
-                    }
-                }
-                ;
-
 input:          NUM INPUT NUM ENDL
                 {
                     if (acirc_eval_input(c, input_f, $1, $3, extra) == ACIRC_ERR)
@@ -109,9 +121,9 @@ input:          NUM INPUT NUM ENDL
                 }
                 ;
 
-const:          NUM CONST NUM ENDL
+const:          NUM CONST ENDL
                 {
-                    if (acirc_eval_const(c, const_f, $1, $3, extra) == ACIRC_ERR)
+                    if (acirc_eval_const(c, const_f, $1, extra) == ACIRC_ERR)
                         YYABORT;
                 }
                 ;
@@ -120,9 +132,13 @@ gate:           NUM GATE NUM NUM ENDL
                 {
                     acirc_eval_gate(c, eval_f, $2, $1, $3, $4, pool, extra);
                 }
+        |       NUM GATE NUM NUM COLON NUM ENDL
+                {
+                    acirc_eval_gate(c, eval_f, $2, $1, $3, $4, pool, extra);
+                }
                 ;
 
-numlist:       /* empty */
+numlist:        %empty
                 {
                     struct ll *list = calloc(1, sizeof list[0]);
                     list->start = list->end = NULL;
@@ -158,7 +174,7 @@ consts:         CONSTS numlist ENDL
                         free(node);
                         node = tmp;
                     }
-                    if (!c->prelim)
+                    if (!c->circuit)
                         acirc_eval_consts(c, vals, list->length);
                     else
                         free(vals);
@@ -179,12 +195,15 @@ outputs:        OUTPUTS numlist ENDL
                         free(node);
                         node = tmp;
                     }
-                    if (!c->prelim)
+                    if (!c->circuit)
                         acirc_eval_outputs(c, refs, list->length);
                     else
                         free(refs);
                     free(list);
                 }
+                ;
+
+secrets:        %empty | SECRETS numlist ENDL
                 ;
 
 %%

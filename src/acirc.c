@@ -181,11 +181,13 @@ acirc_eval_input(acirc_t *c, acirc_input_f f, ref_t ref, size_t inp, void *extra
 }
 
 int
-acirc_eval_const(acirc_t *c, acirc_const_f f, ref_t ref, long val, void *extra)
+acirc_eval_const(acirc_t *c, acirc_const_f f, ref_t ref, void *extra)
 {
     if (f == NULL)
         return ACIRC_OK;
-    map_put(c->map, ref, f(ref - acirc_ninputs(c), val, extra));
+    map_put(c->map, ref, f(c->_nconsts, c->consts[c->_nconsts], extra));
+    if (++c->_nconsts == c->nconsts)
+        c->_nconsts = 0;
     return ACIRC_OK;
 }
 
@@ -256,6 +258,21 @@ eval_worker(void *vargs)
     free(args);
 }
 
+static
+char *
+acirc_op2str(acirc_op op)
+{
+    switch (op) {
+    case ACIRC_OP_ADD:
+        return "ADD";
+    case ACIRC_OP_SUB:
+        return "SUB";
+    case ACIRC_OP_MUL:
+        return "MUL";
+    }
+    return "";
+}
+
 int
 acirc_eval_gate(acirc_t *c, acirc_eval_f f, acirc_op op, ref_t ref, ref_t x, ref_t y,
                 threadpool *pool, void *extra)
@@ -277,6 +294,7 @@ acirc_eval_gate(acirc_t *c, acirc_eval_f f, acirc_op op, ref_t ref, ref_t x, ref
         threadpool_add_job(pool, eval_worker, args);
     } else {
         _out = f(op, x_, y_, extra);
+        /* printf("%s %lu %lu %lu\n", acirc_op2str(op), x_, y_, _out); */
         map_put(c->map, ref, _out);
     }
     return ACIRC_OK;
