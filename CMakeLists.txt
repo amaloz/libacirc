@@ -22,7 +22,6 @@ set(acirc_SOURCES
   src/nmuls.c
   src/eval.c
   src/storage.c
-  src/map.c
   ${FLEX_Scanner_OUTPUTS}
   ${BISON_Parser_OUTPUTS}
   )

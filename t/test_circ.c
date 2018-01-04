@@ -85,6 +85,6 @@ main(int argc, char **argv)
     ok |= test("t/circuits/simple.acirc");
     ok |= test("t/circuits/ggm_1_4.dsl.acirc");
     ok |= test("t/circuits/ggm_4_4.dsl.acirc");
-    ok |= test("t/circuits/ggm_1_32.dsl.acirc");
+    ok |= test("t/circuits/ggm_1_64.dsl.acirc");
     return ok;
 }

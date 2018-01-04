@@ -9,7 +9,6 @@
 typedef struct {
     acirc_eval_f eval;
     acirc_free_f free;
-    pthread_mutex_t *lock;
     storage_t *map;
     acirc_op op;
     ref_t ref;
@@ -68,7 +67,6 @@ acirc_new(const char *fname)
         fprintf(stderr, "error: unable to open file '%s'\n", fname);
         goto error;
     }
-    pthread_mutex_init(&c->storage_lock, NULL);
 
     yyin = c->fp;
     if (yyparse(c, NULL, NULL, NULL, NULL, NULL) != 0) {
@@ -99,7 +97,6 @@ acirc_free(acirc_t *c)
         }
         free(c->tests);
     }
-    pthread_mutex_destroy(&c->storage_lock);
     free(c);
 }
 
@@ -131,7 +128,7 @@ acirc_traverse(acirc_t *c, acirc_input_f input_f, acirc_const_f const_f,
     outputs = calloc(acirc_noutputs(c), sizeof outputs[0]);
     for (size_t i = 0; i < acirc_noutputs(c); ++i) {
         bool done = false;
-        void *out = storage_get(&c->map, c->outrefs[i], &done);
+        void *out = storage_get(&c->map, c->outrefs[i]);
         outputs[i] = copy_f ? copy_f(out, extra) : out;
         if (done) {
             storage_remove_item(&c->map, c->outrefs[i]);
@@ -272,42 +269,30 @@ eval_worker(void *vargs)
     eval_args_t *args = vargs;
 
     while (x == NULL) {
-        pthread_mutex_lock(args->lock);
-        x = storage_get(args->map, args->xref, &x_done);
-        pthread_mutex_unlock(args->lock);
+        x = storage_get(args->map, args->xref);
     }
     while (y == NULL) {
-        pthread_mutex_lock(args->lock);
-        y = storage_get(args->map, args->yref, &y_done);
-        pthread_mutex_unlock(args->lock);
+        y = storage_get(args->map, args->yref);
     }
 
     out = args->eval(args->op, x, y, args->extra);
 
     {
-        pthread_mutex_lock(args->lock);
         x_done = storage_update_item_count(args->map, args->xref);
         y_done = storage_update_item_count(args->map, args->yref);
-        pthread_mutex_unlock(args->lock);
     }
 
     {
-        pthread_mutex_lock(args->lock);
         storage_put(args->map, args->ref, out, args->count);
-        pthread_mutex_unlock(args->lock);
     }
 
     if (x_done) {
-        pthread_mutex_lock(args->lock);
         storage_remove_item(args->map, args->xref);
-        pthread_mutex_unlock(args->lock);
         if (args->free)
             args->free(x, args->extra);
     }
     if (y_done) {
-        pthread_mutex_lock(args->lock);
         storage_remove_item(args->map, args->yref);
-        pthread_mutex_unlock(args->lock);
         if (args->free)
             args->free(y, args->extra);
     }
@@ -322,7 +307,6 @@ acirc_eval_gate(acirc_t *c, acirc_eval_f eval_f, acirc_free_f free_f, acirc_op o
     if (c->pool) {
         eval_args_t *args;
         args = calloc(1, sizeof args[0]);
-        args->lock = &c->storage_lock;
         args->eval = eval_f;
         args->free = free_f;
         args->map = &c->map;
@@ -335,8 +319,8 @@ acirc_eval_gate(acirc_t *c, acirc_eval_f eval_f, acirc_free_f free_f, acirc_op o
         threadpool_add_job(c->pool, eval_worker, args);
     } else {
         void *x, *y, *out;
-        x = storage_get(&c->map, xref, &x_done);
-        y = storage_get(&c->map, yref, &y_done);
+        x = storage_get(&c->map, xref);
+        y = storage_get(&c->map, yref);
         out = eval_f(op, x, y, extra);
         storage_put(&c->map, ref, out, count);
         if (x_done) {

@@ -31,7 +31,6 @@ struct acirc_t {
     size_t _nconsts;
     storage_t map;
     threadpool *pool;
-    pthread_mutex_t storage_lock;
 };
 
 acirc_op acirc_str2op(const char *str);
