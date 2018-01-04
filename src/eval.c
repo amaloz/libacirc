@@ -83,11 +83,11 @@ _acirc_const_mpz(size_t id, long val, void *args)
 }
 
 static void *
-_acirc_eval_mpz(acirc_op op, void *x_, void *y_, void *args)
+_acirc_eval_mpz(acirc_op op, void *x_, void *y_, void *args_)
 {
-    eval_mpz_t *s = args;
+    eval_mpz_t *args = args_;
     mpz_t *x, *y, *modulus, *rop;
-    x = x_; y = y_; modulus = s->modulus;
+    x = x_; y = y_; modulus = args->modulus;
 
     rop = calloc(1, sizeof rop[0]);
     mpz_init(*rop);
@@ -133,7 +133,7 @@ acirc_eval_mpz(acirc_t *c, mpz_t **xs, mpz_t **ys, mpz_t modulus)
     eval_mpz_t s;
     s.xs = xs;
     s.ys = ys;
-    s.modulus = (mpz_t *) &modulus;
+    s.modulus = modulus;
     return (mpz_t **) acirc_traverse(c, _acirc_input_mpz, _acirc_const_mpz,
                                      _acirc_eval_mpz, _acirc_copy_mpz, _acirc_free_mpz, &s);
 }

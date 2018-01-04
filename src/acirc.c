@@ -151,9 +151,9 @@ acirc_test(acirc_t *c)
             printf("\033[1;41m");
         printf("test #%lu: ", t + 1);
         array_printstring(acirc_test_input(c, t), acirc_ninputs(c));
-        printf("\n\twant: ");
+        printf("\n  want: ");
         array_printstring(acirc_test_output(c, t), acirc_noutputs(c));
-        printf("\n\tgot:  ");
+        printf("\n  got:  ");
         for (size_t o = 0; o < acirc_noutputs(c); ++o) {
             printf("%ld", outputs[o]);
         }
