@@ -77,6 +77,7 @@ main(int argc, char **argv)
     (void) argc; (void) argv;
     int ok = 0;
     ok |= test("t/circuits/test.acirc");
+    ok |= test("t/circuits/add.acirc");
     /* ok |= test("t/circuits/size_test.acirc"); */
     return ok;
 }

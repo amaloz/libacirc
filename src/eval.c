@@ -62,10 +62,10 @@ typedef struct {
 } eval_mpz_t;
 
 static void *
-_acirc_input_mpz(size_t id, void *args)
+_acirc_input_mpz(size_t i, void *args)
 {
     eval_mpz_t *s = args;
-    return (void *) s->xs[id];
+    return (void *) s->xs[i];
 }
 
 static void *

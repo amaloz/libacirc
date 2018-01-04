@@ -62,10 +62,10 @@ struct ll {
 
 %%
 
-prog:           lines | prelim lines
+prog:           lines | prelims start lines
                 ;
 
-prelim:         ninputs consts outputs tests start
+prelims:        ninputs consts outputs tests
                 ;
 
 tests:          | tests test | test
@@ -86,7 +86,7 @@ lines:          lines line | line
 line:           input | const | gate
                 ;
 
-ninputs:        NINPUTS NUM ENDLS
+ninputs:        NINPUTS NUM ENDL
                 {
                     if (!c->prelim)
                         c->ninputs = $2;
@@ -102,21 +102,21 @@ start:          START ENDL
                 }
                 ;
 
-input:          NUM INPUT NUM ENDLS
+input:          NUM INPUT NUM ENDL
                 {
                     if (acirc_eval_input(c, input_f, $1, $3, extra) == ACIRC_ERR)
                         YYABORT;
                 }
                 ;
 
-const:          NUM CONST NUM ENDLS
+const:          NUM CONST NUM ENDL
                 {
                     if (acirc_eval_const(c, const_f, $1, $3, extra) == ACIRC_ERR)
                         YYABORT;
                 }
                 ;
 
-gate:           NUM GATE NUM NUM ENDLS
+gate:           NUM GATE NUM NUM ENDL
                 {
                     acirc_eval_gate(c, eval_f, $2, $1, $3, $4, pool, extra);
                 }
@@ -145,7 +145,7 @@ numlist:       /* empty */
                 }
                 ;
 
-consts:         CONSTS numlist ENDLS
+consts:         CONSTS numlist ENDL
                 {
                     long *vals;
                     struct ll *list = $2;
@@ -166,7 +166,7 @@ consts:         CONSTS numlist ENDLS
                 }
                 ;
 
-outputs:        OUTPUTS numlist ENDLS
+outputs:        OUTPUTS numlist ENDL
                 {
                     ref_t *refs;
                     struct ll *list = $2;
@@ -185,9 +185,6 @@ outputs:        OUTPUTS numlist ENDLS
                         free(refs);
                     free(list);
                 }
-                ;
-
-ENDLS:          ENDLS ENDL | ENDL
                 ;
 
 %%
