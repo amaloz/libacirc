@@ -123,8 +123,10 @@ acirc_traverse(acirc_t *c, acirc_input_f input_f, acirc_const_f const_f,
         fprintf(stderr, "error: parsing circuit failed\n");
         return NULL;
     }
-    if (nthreads)
+    if (nthreads) {
         threadpool_destroy(c->pool);
+        c->pool = NULL;
+    }
 
     outputs = calloc(acirc_noutputs(c), sizeof outputs[0]);
     for (size_t i = 0; i < acirc_noutputs(c); ++i) {
