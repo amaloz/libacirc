@@ -47,7 +47,7 @@ typedef struct nlist_t {
     struct nlist_t *nlist;
 };
 
-%token NINPUTS CONSTS OUTPUTS SECRETS SYMLEN BASE TEST START INPUT CONST ENDL COLON
+%token NINPUTS NREFS CONSTS OUTPUTS SECRETS SYMLEN BASE TEST START INPUT CONST ENDL COLON
 %token  <ref>           NUM
 %token  <str>           STR
 %token  <op>            GATE
@@ -60,7 +60,7 @@ typedef struct nlist_t {
 prog:           lines | prelims start lines
                 ;
 
-prelims:        ninputs consts outputs secrets symlen base tests
+prelims:        ninputs nrefs consts outputs secrets symlen base tests
                 ;
 
 ninputs:        NINPUTS NUM ENDL
@@ -69,6 +69,13 @@ ninputs:        NINPUTS NUM ENDL
                         c->ninputs = $2;
                 }
                 ;
+
+nrefs:          NREFS NUM ENDL
+                {
+                    if (!c->circuit)
+                        c->nrefs = $2;
+                }
+        ;
 
 symlen:         %empty | SYMLEN NUM ENDL
                 {

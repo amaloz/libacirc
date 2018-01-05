@@ -59,7 +59,6 @@ long * acirc_test_input(const acirc_t *c, size_t i);
 long * acirc_test_output(const acirc_t *c, size_t i);
 bool acirc_test(acirc_t *c);
 
-
 long acirc_const(acirc_t *c, size_t i);
 
 #endif

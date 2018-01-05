@@ -61,18 +61,29 @@ typedef struct {
 } eval_mpz_t;
 
 static void *
-_acirc_input_mpz(size_t i, void *args)
+_acirc_copy_mpz(void *x_, void *_)
 {
-    eval_mpz_t *s = args;
-    return (void *) s->xs[i];
+    (void) _;
+    mpz_t *x = x_;
+    mpz_t *out;
+    out = calloc(1, sizeof out[0]);
+    mpz_init_set(*out, *x);
+    return out;
 }
 
 static void *
-_acirc_const_mpz(size_t i, long val, void *args)
+_acirc_input_mpz(size_t i, void *args_)
 {
-    eval_mpz_t *s = args;
-    if (s->ys) {
-        return (void *) s->ys[i];
+    eval_mpz_t *args = args_;
+    return _acirc_copy_mpz(args->xs[i], args);
+}
+
+static void *
+_acirc_const_mpz(size_t i, long val, void *args_)
+{
+    eval_mpz_t *args = args_;
+    if (args->ys) {
+        return _acirc_copy_mpz(args->ys[i], args);
     } else {
         mpz_t *x;
         x = calloc(1, sizeof x[0]);
@@ -108,16 +119,6 @@ _acirc_eval_mpz(acirc_op op, const void *x_, const void *y_, void *args_)
     return (void *) rop;
 }
 
-static void *
-_acirc_copy_mpz(void *x_, void *_)
-{
-    (void) _;
-    mpz_t *out;
-    out = calloc(1, sizeof out[0]);
-    mpz_init_set(*out, x_);
-    return out;
-}
-
 static void
 _acirc_free_mpz(void *x_, void *_)
 {
@@ -136,5 +137,6 @@ acirc_eval_mpz(acirc_t *c, mpz_t **xs, mpz_t **ys, mpz_t modulus)
     s.ys = ys;
     s.modulus = (mpz_t *) modulus;
     return (mpz_t **) acirc_traverse(c, _acirc_input_mpz, _acirc_const_mpz,
-                                     _acirc_eval_mpz, _acirc_copy_mpz, _acirc_free_mpz, &s, 0);
+                                     _acirc_eval_mpz, _acirc_copy_mpz, _acirc_free_mpz,
+                                     &s, 0);
 }

@@ -113,7 +113,7 @@ acirc_traverse(acirc_t *c, acirc_input_f input_f, acirc_const_f const_f,
 {
     void **outputs;
 
-    storage_init(&c->map);
+    storage_init(&c->map, c->nrefs);
     if (nthreads)
         c->pool = threadpool_create(nthreads);
     if (yyparse(c, input_f, const_f, eval_f, free_f, extra) != 0) {
@@ -190,7 +190,7 @@ acirc_eval_input(acirc_t *c, acirc_input_f f, ref_t ref, size_t inp, ssize_t cou
 {
     void *value;
     value = f ? f(inp, extra) : NULL;
-    return storage_put(&c->map, ref, value, count);
+    return storage_put(&c->map, ref, value, count, f ? true : false);
 }
 
 int
@@ -204,7 +204,7 @@ acirc_eval_const(acirc_t *c, acirc_const_f f, ref_t ref, ssize_t count, void *ex
     } else {
         value = NULL;
     }
-    return storage_put(&c->map, ref, value, count);
+    return storage_put(&c->map, ref, value, count, f ? true : false);
 }
 
 int
@@ -283,7 +283,7 @@ eval_worker(void *vargs)
     }
 
     {
-        storage_put(args->map, args->ref, out, args->count);
+        storage_put(args->map, args->ref, out, args->count, true);
     }
 
     if (x_done) {
@@ -322,7 +322,7 @@ acirc_eval_gate(acirc_t *c, acirc_eval_f eval_f, acirc_free_f free_f, acirc_op o
         x = storage_get(&c->map, xref);
         y = storage_get(&c->map, yref);
         out = eval_f(op, x, y, extra);
-        storage_put(&c->map, ref, out, count);
+        storage_put(&c->map, ref, out, count, true);
         if (x_done) {
             storage_remove_item(&c->map, xref);
             if (free_f)

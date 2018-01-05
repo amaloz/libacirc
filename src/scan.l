@@ -35,6 +35,7 @@ ADD|SUB|MUL {
 <test>[0-9a-z]+ {yylval.str = strdup(yytext); return STR; }
 [0-9]+     { yylval.ref = (ref_t) atoi(yytext); return NUM; }
 :ninputs   { return NINPUTS; }
+:nrefs     { return NREFS; }
 :consts    { return CONSTS; }
 :outputs   { return OUTPUTS; }
 :secrets   { return SECRETS; }

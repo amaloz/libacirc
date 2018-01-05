@@ -3,7 +3,6 @@
 #include "acirc.h"
 #include "storage.h"
 
-#include <pthread.h>
 #include <stdbool.h>
 #include <threadpool.h>
 
@@ -19,6 +18,7 @@ typedef struct {
 struct acirc_t {
     FILE *fp;
     size_t ninputs;
+    size_t nrefs;
     size_t nconsts;
     size_t noutputs;
     size_t symlen;

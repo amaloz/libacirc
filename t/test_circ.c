@@ -6,14 +6,12 @@ int
 test(const char *fname)
 {
     acirc_t *c;
-    int ret = 1;
+    int err = 1;
 
     printf("\n* %s *\n\n", fname);
 
-    if ((c = acirc_new(fname)) == NULL) {
-        fprintf(stderr, "error: acirc_new failed\n");
-        return ret;
-    }
+    if ((c = acirc_new(fname)) == NULL)
+        return err;
 
     printf("ninputs: %lu\n", acirc_ninputs(c));
     printf("nconsts: %lu\n", acirc_nconsts(c));
@@ -43,7 +41,7 @@ test(const char *fname)
         printf("max depth: %lu\n", depth);
     }
 
-    acirc_test(c);
+    err = acirc_test(c);
 
     {
         mpz_t **xs, modulus, **outputs;
@@ -66,25 +64,26 @@ test(const char *fname)
             }
             printf("\n");
         }
+        for (size_t i = 0; i < acirc_ninputs(c); ++i) {
+            mpz_clear(*xs[i]);
+            free(xs[i]);
+        }
         free(xs);
         free(outputs);
         mpz_clear(modulus);
     }
 
     acirc_free(c);
-    return 0;
+    return err;
 }
 
 int
 main(int argc, char **argv)
 {
     (void) argc; (void) argv;
-    int ok = 0;
-    ok |= test("t/circuits/test.acirc");
-    ok |= test("t/circuits/add.acirc");
-    ok |= test("t/circuits/simple.acirc");
-    ok |= test("t/circuits/ggm_1_4.dsl.acirc");
-    ok |= test("t/circuits/ggm_4_4.dsl.acirc");
-    ok |= test("t/circuits/ggm_1_64.dsl.acirc");
-    return ok;
+    int err = 0;
+    /* err |= test("t/circuits/ggm_1_4.dsl.acirc"); */
+    /* err |= test("t/circuits/ggm_1_64.dsl.acirc"); */
+    err |= test("t/circuits/ggm_3_128.dsl.acirc");
+    return err;
 }
