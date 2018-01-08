@@ -10,7 +10,7 @@ test(const char *fname)
 
     printf("\n* %s *\n\n", fname);
 
-    if ((c = acirc_new(fname)) == NULL)
+    if ((c = acirc_new(fname, false)) == NULL)
         return err;
 
     printf("ninputs: %lu\n", acirc_ninputs(c));

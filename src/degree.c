@@ -93,18 +93,27 @@ acirc_max_const_degree(acirc_t *c)
     return max;
 }
 
+typedef struct {
+    size_t k;
+    size_t symlen;
+} var_args_t;
+
 static void *
-_input_var_f(size_t i, void *extra)
+_input_var_f(size_t i, void *args_)
 {
-    const size_t k = *((size_t *) extra);
-    return (void *) (long) (i == k ? 1 : 0);
+    var_args_t *args = args_;
+    return (void *) (long) (i / args->symlen == args->k ? 1 : 0);
 }
 
 
 long *
 acirc_var_degrees(acirc_t *c, size_t k)
 {
-    return (long *) acirc_traverse(c, _input_var_f, _const_zero_f, _eval_f, NULL, NULL, &k, 0);
+    var_args_t args = {
+        .k = k,
+        .symlen = acirc_symlen(c),
+    };
+    return (long *) acirc_traverse(c, _input_var_f, _const_zero_f, _eval_f, NULL, NULL, &args, 0);
 }
 
 long

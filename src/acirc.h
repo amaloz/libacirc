@@ -28,8 +28,11 @@ typedef struct {
     void *extra;
 } acirc_parse_t;
 
-acirc_t *acirc_new(const char *fname);
+acirc_t *acirc_new(const char *fname, bool mmapped);
 void acirc_free(acirc_t *c);
+
+size_t acirc_symlen(const acirc_t *c);
+
 
 long acirc_ngates(acirc_t *c);
 long acirc_nmuls(acirc_t *c);

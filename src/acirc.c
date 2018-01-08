@@ -57,6 +57,12 @@ acirc_ntests(const acirc_t *c)
     return c->ntests;
 }
 
+size_t
+acirc_symlen(const acirc_t *c)
+{
+    return c->symlen;
+}
+
 long *
 acirc_test_input(const acirc_t *c, size_t i)
 {
@@ -70,34 +76,39 @@ acirc_test_output(const acirc_t *c, size_t i)
 }
 
 acirc_t *
-acirc_new(const char *fname)
+acirc_new(const char *fname, bool mmapped)
 {
     acirc_t *c;
-    void *buf;
-    int fd, len;
 
     if ((c = calloc(1, sizeof c[0])) == NULL)
         return NULL;
 
-    if ((fd = open(fname, O_RDONLY)) == -1) {
-        fprintf(stderr, "error: unable to open file '%s'\n", fname);
-        goto error;
-    }
-
-    {
+    if (mmapped) {
+        int fd, len;
         struct stat st;
+        void *buf;
+
+        if ((fd = open(fname, O_RDONLY)) == -1) {
+            fprintf(stderr, "error: unable to open file '%s'\n", fname);
+            goto error;
+        }
         stat(fname, &st);
         len = st.st_size;
-    }
-    buf = mmap(NULL, len, PROT_READ, MAP_PRIVATE, fd, 0);
-    close(fd);
-    if (buf == NULL) {
-        fprintf(stderr, "error: unable to memory map file\n");
-        goto error;
-    }
-    if ((c->fp = fmemopen(buf, len, "r")) == NULL) {
-        fprintf(stderr, "error: unable to open memory mapped region\n");
-        goto error;
+        buf = mmap(NULL, len, PROT_READ, MAP_PRIVATE, fd, 0);
+        close(fd);
+        if (buf == NULL) {
+            fprintf(stderr, "error: unable to memory map file\n");
+            goto error;
+        }
+        if ((c->fp = fmemopen(buf, len, "r")) == NULL) {
+            fprintf(stderr, "error: unable to open memory mapped region\n");
+            goto error;
+        }
+    } else {
+        if ((c->fp = fopen(fname, "r")) == NULL) {
+            fprintf(stderr, "error: unable to open file '%s'\n", fname);
+            goto error;
+        }
     }
 
     yyin = c->fp;
