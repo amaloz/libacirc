@@ -118,14 +118,21 @@ _acirc_eval_mpz(acirc_op op, const void *x_, const void *y_, void *args_)
         mpz_mod(*rop, *rop, *modulus);
     return (void *) rop;
 }
+static void *
+_acirc_output_mpz(size_t i, void *x, void *args)
+{
+    (void) i;
+    return _acirc_copy_mpz(x, args);
+}
 
 static void
 _acirc_free_mpz(void *x_, void *_)
 {
     (void) _;
-    if (x_) {
-        mpz_clear(x_);
-        free(x_);
+    mpz_t *x = x_;
+    if (x) {
+        mpz_clear(*x);
+        free(x);
     }
 }
 
@@ -137,6 +144,6 @@ acirc_eval_mpz(acirc_t *c, mpz_t **xs, mpz_t **ys, mpz_t modulus)
     s.ys = ys;
     s.modulus = (mpz_t *) modulus;
     return (mpz_t **) acirc_traverse(c, _acirc_input_mpz, _acirc_const_mpz,
-                                     _acirc_eval_mpz, _acirc_copy_mpz, _acirc_free_mpz,
-                                     &s, 0);
+                                     _acirc_eval_mpz, _acirc_output_mpz,
+                                     _acirc_free_mpz, &s, 0);
 }
