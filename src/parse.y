@@ -79,13 +79,15 @@ nrefs:          NREFS NUM ENDL
 
 symlen:         %empty | SYMLEN NUM ENDL
                 {
-                    c->symlen = $2;
+                    if (!c->circuit)
+                        c->symlen = $2;
                 }
                 ;
 
 base:           %empty | BASE NUM ENDL
                 {
-                    c->base = $2;
+                    if (!c->base)
+                        c->base = $2;
                 }
                 ;
 

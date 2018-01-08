@@ -111,6 +111,10 @@ acirc_new(const char *fname, bool mmapped)
         }
     }
 
+    /* set defaults */
+    c->symlen = 1;
+    c->base = 2;
+
     yyin = c->fp;
     if (yyparse(c, NULL, NULL, NULL, NULL, NULL) != 0) {
         fprintf(stderr, "error: parsing circuit failed\n");
