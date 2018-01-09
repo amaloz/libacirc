@@ -83,12 +83,16 @@ acirc_max_const_degree(acirc_t *c)
     long *degrees;
     long max = 0;
 
+    if (c->_max_const_degree != -1)
+        return c->_max_const_degree;
+
     if ((degrees = acirc_const_degrees(c)) == NULL)
         return -1;
     for (size_t i = 0; i < acirc_noutputs(c); ++i) {
         if (degrees[i] > max)
             max = degrees[i];
     }
+    c->_max_const_degree = max;
     free(degrees);
     return max;
 }
@@ -137,7 +141,7 @@ acirc_delta(acirc_t *c)
     long delta;
 
     delta = acirc_max_const_degree(c);
-    for (size_t i = 0 ; i < acirc_ninputs(c); ++i) {
+    for (size_t i = 0 ; i < acirc_ninputs(c) / acirc_symlen(c); ++i) {
         delta += acirc_max_var_degree(c, i);
     }
     return delta;

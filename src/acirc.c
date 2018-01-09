@@ -33,6 +33,12 @@ typedef struct {
 
 extern FILE *yyin;
 
+bool
+acirc_is_binary(const acirc_t *c)
+{
+    return c->binary;
+}
+
 size_t
 acirc_ninputs(const acirc_t *c)
 {
@@ -114,6 +120,7 @@ acirc_new(const char *fname, bool mmapped)
     /* set defaults */
     c->symlen = 1;
     c->base = 2;
+    c->_max_const_degree = -1;
 
     yyin = c->fp;
     if (yyparse(c, NULL, NULL, NULL, NULL, NULL) != 0) {

@@ -23,6 +23,7 @@ struct acirc_t {
     size_t noutputs;
     size_t symlen;
     size_t base;
+    bool binary;                /* true if the circuit is binary */
     long *consts;
     ref_t *outrefs;
     bool circuit;               /* true if we are done parsing the prelim section */
@@ -31,6 +32,7 @@ struct acirc_t {
     size_t _nconsts;
     storage_t map;
     threadpool *pool;
+    ssize_t _max_const_degree;
 };
 
 acirc_op acirc_str2op(const char *str);

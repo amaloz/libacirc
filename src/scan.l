@@ -41,6 +41,7 @@ ADD|SUB|MUL {
 :secrets   { return SECRETS; }
 :symlen    { return SYMLEN; }
 :base      { return BASE; }
+:binary    { return BINARY; }
 :test      { BEGIN(test); return TEST; }
 :start     { return START; }
 

@@ -31,9 +31,6 @@ typedef struct {
 acirc_t *acirc_new(const char *fname, bool mmapped);
 void acirc_free(acirc_t *c);
 
-size_t acirc_symlen(const acirc_t *c);
-
-
 long acirc_ngates(acirc_t *c);
 long acirc_nmuls(acirc_t *c);
 
@@ -57,6 +54,8 @@ void ** acirc_traverse(acirc_t *c, acirc_input_f input_f, acirc_const_f const_f,
 size_t acirc_ninputs(const acirc_t *c);
 size_t acirc_nconsts(const acirc_t *c);
 size_t acirc_noutputs(const acirc_t *c);
+size_t acirc_symlen(const acirc_t *c);
+bool acirc_is_binary(const acirc_t *c);
 
 size_t acirc_ntests(const acirc_t *c);
 long * acirc_test_input(const acirc_t *c, size_t i);
