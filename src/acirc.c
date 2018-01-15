@@ -64,9 +64,9 @@ acirc_ntests(const acirc_t *c)
 }
 
 size_t
-acirc_symlen(const acirc_t *c)
+acirc_symlen(const acirc_t *c, size_t i)
 {
-    return c->symlen;
+    return c->symlens[i];
 }
 
 long *
@@ -118,7 +118,6 @@ acirc_new(const char *fname, bool mmapped)
     }
 
     /* set defaults */
-    c->symlen = 1;
     c->base = 2;
     c->_max_const_degree = -1;
 
@@ -392,8 +391,9 @@ output_worker(void *vargs)
     free(args);
 }
 
-void
-acirc_eval_output(acirc_t *c, acirc_output_f output_f, void **outputs, ref_t i, ref_t ref, void *extra)
+int
+acirc_eval_output(acirc_t *c, acirc_output_f output_f, void **outputs, ref_t i,
+                  ref_t ref, void *extra)
 {
     if (c->pool) {
         output_args_t *args;
@@ -410,7 +410,18 @@ acirc_eval_output(acirc_t *c, acirc_output_f output_f, void **outputs, ref_t i, 
         x = storage_get(&c->map, ref);
         outputs[i] = output_f ? output_f(i, x, extra) : x;
     }
+    return ACIRC_OK;
 }
+
+int
+acirc_eval_symlens(acirc_t *c, size_t *vals, size_t n)
+{
+    c->symlens = vals;
+    c->nsymbols = n;
+    return ACIRC_OK;
+}
+
+/* Extra functions */
 
 char *
 acirc_op2str(acirc_op op)

@@ -47,7 +47,8 @@ typedef struct nlist_t {
     struct nlist_t *nlist;
 };
 
-%token NINPUTS NREFS CONSTS OUTPUTS SECRETS SYMLEN BASE BINARY TEST START INPUT CONST ENDL COLON
+%token NINPUTS NREFS CONSTS OUTPUTS SECRETS SYMLEN BASE BINARY TEST START INPUT CONST
+%token COLON ENDL
 %token  <ref>           NUM
 %token  <str>           STR
 %token  <op>            GATE
@@ -77,10 +78,13 @@ nrefs:          NREFS NUM ENDL
                 }
         ;
 
-symlen:         %empty | SYMLEN NUM ENDL
+symlen:         %empty | SYMLEN numlist ENDL
                 {
-                    if (!c->circuit)
-                        c->symlen = $2;
+                    nlist_t *list = $2;
+                    if (!c->circuit) {
+                        acirc_eval_symlens(c, list->data, list->n);
+                        free(list);
+                    }
                 }
                 ;
 

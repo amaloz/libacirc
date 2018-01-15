@@ -26,13 +26,13 @@ ADD|SUB|MUL {
 }
 
 <test>\n { BEGIN(INITIAL); return ENDL; }
+<test>[0-9a-z]+ {yylval.str = strdup(yytext); return STR; }
 
 \n       { return ENDL; }
 [ \r\t]+                        /* ignore whitespace */
 #.*\n                           /* ignore comments */
 :        { return COLON; }
 
-<test>[0-9a-z]+ {yylval.str = strdup(yytext); return STR; }
 [0-9]+     { yylval.ref = (ref_t) atoi(yytext); return NUM; }
 :ninputs   { return NINPUTS; }
 :nrefs     { return NREFS; }

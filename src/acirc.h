@@ -35,14 +35,14 @@ long acirc_ngates(acirc_t *c);
 long acirc_nmuls(acirc_t *c);
 
 long * acirc_degrees(acirc_t *c);
-long acirc_max_degree(acirc_t *c);
+long   acirc_max_degree(acirc_t *c);
 long * acirc_const_degrees(acirc_t *c);
-long acirc_max_const_degree(acirc_t *c);
+long   acirc_max_const_degree(acirc_t *c);
 long * acirc_var_degrees(acirc_t *c, size_t k);
-long acirc_max_var_degree(acirc_t *c, size_t k);
+long   acirc_max_var_degree(acirc_t *c, size_t k);
 long * acirc_depths(acirc_t *c);
-long acirc_max_depth(acirc_t *c);
-long acirc_delta(acirc_t *c);
+long   acirc_max_depth(acirc_t *c);
+long   acirc_delta(acirc_t *c);
 
 long * acirc_eval(acirc_t *c, long *xs, long *ys);
 mpz_t ** acirc_eval_mpz(acirc_t *c, mpz_t **xs, mpz_t **ys, mpz_t modulus);
@@ -54,7 +54,7 @@ void ** acirc_traverse(acirc_t *c, acirc_input_f input_f, acirc_const_f const_f,
 size_t acirc_ninputs(const acirc_t *c);
 size_t acirc_nconsts(const acirc_t *c);
 size_t acirc_noutputs(const acirc_t *c);
-size_t acirc_symlen(const acirc_t *c);
+size_t acirc_symlen(const acirc_t *c, size_t i);
 bool acirc_is_binary(const acirc_t *c);
 
 size_t acirc_ntests(const acirc_t *c);
