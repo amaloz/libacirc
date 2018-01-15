@@ -35,9 +35,6 @@ struct acirc_t {
     ssize_t _max_const_degree;
 };
 
-acirc_op acirc_str2op(const char *str);
-char * acirc_op2str(acirc_op op);
-
 int acirc_eval_input(acirc_t *c, acirc_input_f f, ref_t ref, size_t inp,
                      ssize_t count, void *extra);
 int acirc_eval_const(acirc_t *c, acirc_const_f f, ref_t ref, ssize_t count,

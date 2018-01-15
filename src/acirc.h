@@ -64,4 +64,7 @@ bool acirc_test(acirc_t *c);
 
 long acirc_const(acirc_t *c, size_t i);
 
+acirc_op acirc_str2op(const char *str);
+char *   acirc_op2str(acirc_op op);
+
 #endif
