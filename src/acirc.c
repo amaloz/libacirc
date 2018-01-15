@@ -58,6 +58,12 @@ acirc_noutputs(const acirc_t *c)
 }
 
 size_t
+acirc_nsymbols(const acirc_t *c)
+{
+    return c->nsymbols;
+}
+
+size_t
 acirc_ntests(const acirc_t *c)
 {
     return c->ntests;

@@ -54,6 +54,7 @@ void ** acirc_traverse(acirc_t *c, acirc_input_f input_f, acirc_const_f const_f,
 size_t acirc_ninputs(const acirc_t *c);
 size_t acirc_nconsts(const acirc_t *c);
 size_t acirc_noutputs(const acirc_t *c);
+size_t acirc_nsymbols(const acirc_t *c);
 size_t acirc_symlen(const acirc_t *c, size_t i);
 bool acirc_is_binary(const acirc_t *c);
 

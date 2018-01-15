@@ -144,7 +144,7 @@ acirc_delta(acirc_t *c)
     long delta;
 
     delta = acirc_max_const_degree(c);
-    for (size_t k = 0 ; k < acirc_ninputs(c); k += acirc_symlen(c, k)) {
+    for (size_t k = 0 ; k < acirc_nsymbols(c); ++k) {
         delta += acirc_max_var_degree(c, k);
     }
     return delta;
