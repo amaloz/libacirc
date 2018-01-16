@@ -14,10 +14,10 @@ typedef enum {
     ACIRC_OP_SUB,
     ACIRC_OP_MUL,
 } acirc_op;
-typedef void * (*acirc_input_f)(size_t, void *);
-typedef void * (*acirc_const_f)(size_t, long, void *);
-typedef void * (*acirc_eval_f)(acirc_op, const void *, const void *, void *);
-typedef void * (*acirc_output_f)(size_t, void *, void *);
+typedef void * (*acirc_input_f)(size_t, size_t, void *);
+typedef void * (*acirc_const_f)(size_t, size_t, long, void *);
+typedef void * (*acirc_eval_f)(size_t, acirc_op, size_t, const void *, size_t, const void *, void *);
+typedef void * (*acirc_output_f)(size_t, size_t, void *, void *);
 typedef void * (*acirc_copy_f)(void *, void *);
 typedef void (*acirc_free_f)(void *, void *);
 
@@ -33,6 +33,7 @@ void acirc_free(acirc_t *c);
 
 long acirc_ngates(acirc_t *c);
 long acirc_nmuls(acirc_t *c);
+size_t acirc_nrefs(const acirc_t *c);
 
 long * acirc_degrees(acirc_t *c);
 long   acirc_max_degree(acirc_t *c);

@@ -4,9 +4,9 @@
 #include <stdlib.h>
 
 static void *
-_eval_f(acirc_op op, const void *x, const void *y, void *count_)
+_eval_f(size_t ref, acirc_op op, size_t xref, const void *x, size_t yref, const void *y, void *count_)
 {
-    (void) x; (void) y;
+    (void) ref; (void) xref; (void) yref; (void) x; (void) y;
     long *count = count_;
     if (op == ACIRC_OP_MUL)
         (*count)++;

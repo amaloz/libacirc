@@ -10,15 +10,17 @@ typedef struct {
 } eval_t;
 
 static void *
-_acirc_input(size_t i, void *args_)
+_acirc_input(size_t ref, size_t i, void *args_)
 {
+    (void) ref;
     eval_t *args = args_;
     return (void *) args->xs[i];
 }
 
 static void *
-_acirc_const(size_t i, long val, void *args_)
+_acirc_const(size_t ref, size_t i, long val, void *args_)
 {
+    (void) ref;
     eval_t *args = args_;
     if (args->ys) {
         return (void *) args->ys[i];
@@ -28,9 +30,9 @@ _acirc_const(size_t i, long val, void *args_)
 }
 
 static void *
-_acirc_eval(acirc_op op, const void *x_, const void *y_, void *_)
+_acirc_eval(size_t ref, acirc_op op, size_t xref, const void *x_, size_t yref, const void *y_, void *_)
 {
-    (void) _;
+    (void) ref; (void) xref; (void) yref; (void) _;
     long x, y;
     x = (long) x_; y = (long) y_;
     switch (op) {
@@ -72,15 +74,17 @@ _acirc_copy_mpz(void *x_, void *_)
 }
 
 static void *
-_acirc_input_mpz(size_t i, void *args_)
+_acirc_input_mpz(size_t ref, size_t i, void *args_)
 {
+    (void) ref;
     eval_mpz_t *args = args_;
     return _acirc_copy_mpz(args->xs[i], args);
 }
 
 static void *
-_acirc_const_mpz(size_t i, long val, void *args_)
+_acirc_const_mpz(size_t ref, size_t i, long val, void *args_)
 {
+    (void) ref;
     eval_mpz_t *args = args_;
     if (args->ys) {
         return _acirc_copy_mpz(args->ys[i], args);
@@ -93,8 +97,9 @@ _acirc_const_mpz(size_t i, long val, void *args_)
 }
 
 static void *
-_acirc_eval_mpz(acirc_op op, const void *x_, const void *y_, void *args_)
+_acirc_eval_mpz(size_t ref, acirc_op op, size_t xref, const void *x_, size_t yref, const void *y_, void *args_)
 {
+    (void) ref; (void) xref; (void) yref;
     eval_mpz_t *args = args_;
     const mpz_t *x = (const mpz_t *) x_;
     const mpz_t *y = (const mpz_t *) y_;
@@ -119,9 +124,9 @@ _acirc_eval_mpz(acirc_op op, const void *x_, const void *y_, void *args_)
     return (void *) rop;
 }
 static void *
-_acirc_output_mpz(size_t i, void *x, void *args)
+_acirc_output_mpz(size_t ref, size_t i, void *x, void *args)
 {
-    (void) i;
+    (void) ref; (void) i;
     return _acirc_copy_mpz(x, args);
 }
 

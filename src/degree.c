@@ -4,38 +4,38 @@
 #include <stdlib.h>
 
 static void *
-_input_zero_f(size_t i, void *extra)
+_input_zero_f(size_t ref, size_t i, void *extra)
 {
-    (void) i; (void) extra;
+    (void) ref; (void) i; (void) extra;
     return (void *) 0;
 }
 
 
 static void *
-_input_one_f(size_t i, void *extra)
+_input_one_f(size_t ref, size_t i, void *extra)
 {
-    (void) i; (void) extra;
+    (void) ref; (void) i; (void) extra;
     return (void *) 1;
 }
 
 static void *
-_const_zero_f(size_t i, long val, void *extra)
+_const_zero_f(size_t ref, size_t i, long val, void *extra)
 {
-    (void) i; (void) val; (void) extra;
+    (void) ref; (void) i; (void) val; (void) extra;
     return (void *) 0;
 }
 
 static void *
-_const_one_f(size_t i, long val, void *extra)
+_const_one_f(size_t ref, size_t i, long val, void *extra)
 {
-    (void) i; (void) val; (void) extra;
+    (void) ref; (void) i; (void) val; (void) extra;
     return (void *) 1;
 }
 
 static void *
-_eval_f(acirc_op op, const void *x, const void *y, void *_)
+_eval_f(size_t ref, acirc_op op, size_t xref, const void *x, size_t yref, const void *y, void *_)
 {
-    (void) _;
+    (void) ref; (void) xref; (void) yref; (void) _;
     unsigned long x_, y_;
     x_ = (unsigned long) x;
     y_ = (unsigned long) y;
@@ -103,8 +103,9 @@ typedef struct {
 } var_args_t;
 
 static void *
-_input_var_f(size_t i, void *args_)
+_input_var_f(size_t ref, size_t i, void *args_)
 {
+    (void) ref;
     var_args_t *args = args_;
     size_t lower = 0, upper = 0;
     for (size_t i = 0; i < args->k; ++i)

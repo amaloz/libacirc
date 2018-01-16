@@ -40,6 +40,12 @@ acirc_is_binary(const acirc_t *c)
 }
 
 size_t
+acirc_nrefs(const acirc_t *c)
+{
+    return c->nrefs;
+}
+
+size_t
 acirc_ninputs(const acirc_t *c)
 {
     return c->ninputs;
@@ -239,7 +245,7 @@ int
 acirc_eval_input(acirc_t *c, acirc_input_f f, ref_t ref, size_t inp, ssize_t count, void *extra)
 {
     void *value;
-    value = f ? f(inp, extra) : NULL;
+    value = f ? f(ref, inp, extra) : NULL;
     return storage_put(&c->map, ref, value, count, f ? true : false);
 }
 
@@ -248,7 +254,7 @@ acirc_eval_const(acirc_t *c, acirc_const_f f, ref_t ref, ssize_t count, void *ex
 {
     void *value;
     if (f) {
-        value = f(c->_nconsts, c->consts[c->_nconsts], extra);
+        value = f(ref, c->_nconsts, c->consts[c->_nconsts], extra);
         if (++c->_nconsts == c->nconsts)
             c->_nconsts = 0;
     } else {
@@ -325,7 +331,7 @@ eval_worker(void *vargs)
         y = storage_get(args->map, args->yref);
     }
 
-    out = args->eval(args->op, x, y, args->extra);
+    out = args->eval(args->ref, args->op, args->xref, x, args->yref, y, args->extra);
 
     {
         x_done = storage_update_item_count(args->map, args->xref);
@@ -371,7 +377,7 @@ acirc_eval_gate(acirc_t *c, acirc_eval_f eval_f, acirc_free_f free_f, acirc_op o
         void *x, *y, *out;
         x = storage_get(&c->map, xref);
         y = storage_get(&c->map, yref);
-        out = eval_f(op, x, y, extra);
+        out = eval_f(ref, op, xref, x, yref, y, extra);
         storage_put(&c->map, ref, out, count, true);
         if (x_done) {
             storage_remove_item(&c->map, xref);
@@ -395,7 +401,7 @@ output_worker(void *vargs)
     while (x == NULL) {
         x = storage_get(args->map, args->ref);
     }
-    args->outputs[args->i] = args->output ? args->output(args->i, x, args->extra) : x;
+    args->outputs[args->i] = args->output ? args->output(args->ref, args->i, x, args->extra) : x;
     free(args);
 }
 
@@ -416,7 +422,7 @@ acirc_eval_output(acirc_t *c, acirc_output_f output_f, void **outputs, ref_t i,
     } else {
         void *x;
         x = storage_get(&c->map, ref);
-        outputs[i] = output_f ? output_f(i, x, extra) : x;
+        outputs[i] = output_f ? output_f(ref, i, x, extra) : x;
     }
     return ACIRC_OK;
 }
