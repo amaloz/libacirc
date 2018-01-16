@@ -149,6 +149,8 @@ acirc_free(acirc_t *c)
         free(c->consts);
     if (c->outrefs)
         free(c->outrefs);
+    if (c->symlens)
+        free(c->symlens);
     if (c->tests) {
         for (size_t i = 0; i < c->ntests; ++i) {
             free(c->tests[i].inps);

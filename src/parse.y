@@ -78,7 +78,7 @@ nrefs:          NREFS NUM ENDL
                 }
         ;
 
-symlen:         %empty | SYMLEN numlist ENDL
+symlen:         SYMLEN numlist ENDL
                 {
                     nlist_t *list = $2;
                     if (!c->circuit) {
