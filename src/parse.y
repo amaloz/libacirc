@@ -48,7 +48,7 @@ typedef struct nlist_t {
 };
 
 %token NINPUTS NREFS CONSTS OUTPUTS SECRETS SYMLEN BASE BINARY TEST START INPUT CONST
-%token COLON ENDL
+%token COLON INF ENDL
 %token  <ref>           NUM
 %token  <str>           STR
 %token  <op>            GATE
@@ -154,6 +154,7 @@ const:          NUM CONST ENDL
                 ;
 
 gate:           NUM GATE NUM NUM ENDL
+        |       NUM GATE NUM NUM COLON INF ENDL
                 {
                     acirc_eval_gate(c, eval_f, free_f, $2, $1, $3, $4, -1, extra);
                 }

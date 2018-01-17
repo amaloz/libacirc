@@ -32,6 +32,7 @@ ADD|SUB|MUL {
 [ \r\t]+                        /* ignore whitespace */
 #.*\n                           /* ignore comments */
 :        { return COLON; }
+inf      { return INF; }
 
 [0-9]+     { yylval.ref = (ref_t) atoi(yytext); return NUM; }
 :ninputs   { return NINPUTS; }
