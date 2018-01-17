@@ -6,6 +6,7 @@
 
 struct data_t {
     void *value;
+    pthread_mutex_t lock;
     ssize_t count;
     bool mine;
 };
@@ -15,7 +16,10 @@ storage_init(storage_t *m, size_t nrefs)
 {
     m->nrefs = nrefs;
     m->array = calloc(m->nrefs, sizeof m->array[0]);
-    pthread_mutex_init(&m->lock, NULL);
+    for (size_t i = 0; i < m->nrefs; ++i) {
+        pthread_mutex_init(&m->array[i].lock, NULL);
+        pthread_mutex_lock(&m->array[i].lock);
+    }
     return ACIRC_OK;
 }
 
@@ -28,10 +32,10 @@ storage_clear(storage_t *m, acirc_free_f f, void *extra)
         for (size_t i = 0; i < m->nrefs; ++i) {
             if (m->array[i].value && m->array[i].mine)
                 f(m->array[i].value, extra);
+            pthread_mutex_destroy(&m->array[i].lock);
         }
     }
     free(m->array);
-    pthread_mutex_destroy(&m->lock);
 }
 
 int
@@ -42,6 +46,7 @@ storage_put(storage_t *m, ref_t ref, void *value, ssize_t count, bool mine)
     m->array[ref].value = value;
     m->array[ref].count = count;
     m->array[ref].mine = mine;
+    pthread_mutex_unlock(&m->array[ref].lock);
     return ACIRC_OK;
 }
 
@@ -50,6 +55,8 @@ storage_get(storage_t *m, ref_t ref)
 {
     if (ref >= m->nrefs)
         return NULL;
+    pthread_mutex_lock(&m->array[ref].lock);
+    pthread_mutex_unlock(&m->array[ref].lock);
     return m->array[ref].value;
 }
 
@@ -57,9 +64,9 @@ bool
 storage_update_item_count(storage_t *m, ref_t ref)
 {
     bool result;
-    pthread_mutex_lock(&m->lock);
+    pthread_mutex_lock(&m->array[ref].lock);
     result = m->array[ref].count > 0 && --m->array[ref].count == 0;
-    pthread_mutex_unlock(&m->lock);
+    pthread_mutex_unlock(&m->array[ref].lock);
     return result;
 }
 

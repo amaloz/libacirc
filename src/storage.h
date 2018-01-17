@@ -11,7 +11,6 @@ typedef struct data_t data_t;
 typedef struct {
     data_t *array;
     size_t nrefs;
-    pthread_mutex_t lock;
 } storage_t;
 
 #pragma GCC visibility push(hidden)
