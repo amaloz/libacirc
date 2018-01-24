@@ -58,6 +58,12 @@ acirc_nconsts(const acirc_t *c)
 }
 
 size_t
+acirc_nsecrets(const acirc_t *c)
+{
+    return c->nsecrets;
+}
+
+size_t
 acirc_noutputs(const acirc_t *c)
 {
     return c->noutputs;
@@ -78,18 +84,48 @@ acirc_ntests(const acirc_t *c)
 size_t
 acirc_symlen(const acirc_t *c, size_t i)
 {
+    if (i >= c->nsymbols)
+        return 0;
     return c->symlens[i];
+}
+
+bool
+acirc_is_sigma(const acirc_t *c, size_t i)
+{
+    if (i >= c->nsymbols)
+        return 0;
+    return c->sigmas[i] ? true : false;
+}
+
+long
+acirc_const(acirc_t *c, size_t i)
+{
+    if (i >= c->nconsts)
+        return 0;
+    return c->consts[i];
+}
+
+long
+acirc_secret(acirc_t *c, size_t i)
+{
+    if (i >= c->nsecrets)
+        return 0;
+    return c->secrets[i];
 }
 
 long *
 acirc_test_input(const acirc_t *c, size_t i)
 {
+    if (i >= c->ntests)
+        return NULL;
     return c->tests[i].inps;
 }
 
 long *
 acirc_test_output(const acirc_t *c, size_t i)
 {
+    if (i >= c->ntests)
+        return NULL;
     return c->tests[i].outs;
 }
 
@@ -130,7 +166,6 @@ acirc_new(const char *fname, bool mmapped)
     }
 
     /* set defaults */
-    c->base = 2;
     c->_max_const_degree = -1;
 
     yyin = c->fp;
@@ -153,10 +188,14 @@ acirc_free(acirc_t *c)
         fclose(c->fp);
     if (c->consts)
         free(c->consts);
+    if (c->secrets)
+        free(c->secrets);
     if (c->outrefs)
         free(c->outrefs);
     if (c->symlens)
         free(c->symlens);
+    if (c->sigmas)
+        free(c->sigmas);
     if (c->tests) {
         for (size_t i = 0; i < c->ntests; ++i) {
             free(c->tests[i].inps);
@@ -165,12 +204,6 @@ acirc_free(acirc_t *c)
         free(c->tests);
     }
     free(c);
-}
-
-long
-acirc_const(acirc_t *c, size_t i)
-{
-    return c->consts[i];
 }
 
 void **
@@ -186,11 +219,13 @@ acirc_traverse(acirc_t *c, acirc_input_f input_f, acirc_const_f const_f,
         fprintf(stderr, "error: parsing circuit failed\n");
         return NULL;
     }
-    outputs = calloc(acirc_noutputs(c), sizeof outputs[0]);
-    for (size_t i = 0; i < acirc_noutputs(c); ++i) {
-        acirc_eval_output(c, output_f, outputs, i, c->outrefs[i], extra);
+    if ((outputs = calloc(acirc_noutputs(c), sizeof outputs[0])) == NULL) {
+        fprintf(stderr, "error: memory allocation failed\n");
+        return NULL;
     }
-    if (nthreads)
+    for (size_t i = 0; i < acirc_noutputs(c); ++i)
+        acirc_eval_output(c, output_f, outputs, i, c->outrefs[i], extra);
+    if (c->pool)
         threadpool_destroy(c->pool);
     storage_clear(&c->map, free_f, extra);
     fseek(c->fp, 0, SEEK_SET);
@@ -212,7 +247,8 @@ acirc_test(acirc_t *c)
         long *outputs;
         bool test_ok = true;
 
-        outputs = acirc_eval(c, acirc_test_input(c, t), NULL);
+        if ((outputs = acirc_eval(c, acirc_test_input(c, t), NULL)) == NULL)
+            return false;
         for (size_t o = 0; o < acirc_noutputs(c); ++o) {
             test_ok = test_ok && (outputs[o] == acirc_test_output(c, t)[o]);
         }
@@ -224,9 +260,7 @@ acirc_test(acirc_t *c)
         printf("\n  want: ");
         array_printstring(acirc_test_output(c, t), acirc_noutputs(c));
         printf("\n  got:  ");
-        for (size_t o = 0; o < acirc_noutputs(c); ++o) {
-            printf("%ld", outputs[o]);
-        }
+        array_printstring(outputs, acirc_noutputs(c));
         if (!test_ok)
             printf("\033[0m");
         printf("\n");
@@ -242,24 +276,36 @@ acirc_test(acirc_t *c)
  */
 
 int
-acirc_eval_input(acirc_t *c, acirc_input_f f, ref_t ref, size_t inp, ssize_t count, void *extra)
+acirc_eval_input(acirc_t *c, acirc_input_f f, ref_t ref, size_t idx,
+                 ssize_t count, void *extra)
 {
     void *value;
-    value = f ? f(ref, inp, extra) : NULL;
+    if (idx >= c->ninputs)
+        return ACIRC_ERR;
+    value = f ? f(ref, idx, extra) : NULL;
     return storage_put(&c->map, ref, value, count, f ? true : false);
 }
 
 int
-acirc_eval_const(acirc_t *c, acirc_const_f f, ref_t ref, ssize_t count, void *extra)
+acirc_eval_const(acirc_t *c, acirc_const_f f, ref_t ref, size_t idx,
+                 ssize_t count, void *extra)
 {
     void *value;
-    if (f) {
-        value = f(ref, c->_nconsts, c->consts[c->_nconsts], extra);
-        if (++c->_nconsts == c->nconsts)
-            c->_nconsts = 0;
-    } else {
-        value = NULL;
-    }
+    if (idx >= c->nconsts)
+        return ACIRC_ERR;
+    value = f ? f(ref, idx, c->consts[idx], extra) : NULL;
+    return storage_put(&c->map, ref, value, count, f ? true : false);
+}
+
+int
+acirc_eval_secret(acirc_t *c, acirc_const_f f, ref_t ref, size_t idx,
+                  ssize_t count, void *extra)
+{
+    void *value;
+    if (idx >= c->nsecrets)
+        return ACIRC_ERR;
+    /* secrets are stored within the constants array */
+    value = f ? f(ref, c->nconsts + idx, c->secrets[idx], extra) : NULL;
     return storage_put(&c->map, ref, value, count, f ? true : false);
 }
 
@@ -268,6 +314,30 @@ acirc_eval_consts(acirc_t *c, long *vals, size_t n)
 {
     c->consts = vals;
     c->nconsts = n;
+    return ACIRC_OK;
+}
+
+int
+acirc_eval_secrets(acirc_t *c, long *vals, size_t n)
+{
+    c->secrets = vals;
+    c->nsecrets = n;
+    return ACIRC_OK;
+}
+
+int
+acirc_eval_symlens(acirc_t *c, size_t *vals, size_t n)
+{
+    c->symlens = vals;
+    c->nsymbols = n;
+    return ACIRC_OK;
+}
+
+int
+acirc_eval_sigmas(acirc_t *c, size_t *vals, size_t n)
+{
+    (void) n;
+    c->sigmas = vals;
     return ACIRC_OK;
 }
 
@@ -303,15 +373,16 @@ acirc_eval_test(acirc_t *c, char *in, char *out)
         fprintf(stderr, "error: test output length ≠ %lu\n", acirc_noutputs(c));
         return ACIRC_ERR;
     }
-    c->tests = realloc(c->tests, sizeof c->tests[0] * (c->ntests + 1));
-    c->tests[c->ntests].inps = calloc(acirc_ninputs(c), sizeof(long));
-    c->tests[c->ntests].outs = calloc(acirc_noutputs(c), sizeof(long));
-    for (size_t i = 0; i < acirc_ninputs(c); ++i) {
+    if ((c->tests = realloc(c->tests, sizeof c->tests[0] * (c->ntests + 1))) == NULL)
+        return ACIRC_ERR;
+    c->tests[c->ntests].inps = calloc(acirc_ninputs(c),
+                                      sizeof c->tests[c->ntests].inps[0]);
+    c->tests[c->ntests].outs = calloc(acirc_noutputs(c),
+                                      c->tests[c->ntests].outs[0]);
+    for (size_t i = 0; i < acirc_ninputs(c); ++i)
         c->tests[c->ntests].inps[i] = char2long(in[i]);
-    }
-    for (size_t i = 0; i < acirc_noutputs(c); ++i) {
+    for (size_t i = 0; i < acirc_noutputs(c); ++i)
         c->tests[c->ntests].outs[i] = char2long(out[i]);
-    }
     c->ntests++;
     return ACIRC_OK;
 }
@@ -320,23 +391,19 @@ acirc_eval_test(acirc_t *c, char *in, char *out)
 static void
 eval_worker(void *vargs)
 {
-    void *out, *x = NULL, *y = NULL;
-    bool x_done = false, y_done = false;
+    void *rop, *x, *y;
+    bool x_done, y_done;
     eval_args_t *args = vargs;
 
     x = storage_get(args->map, args->xref);
     y = storage_get(args->map, args->yref);
 
-    out = args->eval(args->ref, args->op, args->xref, x, args->yref, y, args->extra);
+    rop = args->eval(args->ref, args->op, args->xref, x, args->yref, y, args->extra);
 
-    {
-        x_done = storage_update_item_count(args->map, args->xref);
-        y_done = storage_update_item_count(args->map, args->yref);
-    }
+    x_done = storage_update_item_count(args->map, args->xref);
+    y_done = storage_update_item_count(args->map, args->yref);
 
-    {
-        storage_put(args->map, args->ref, out, args->count, true);
-    }
+    storage_put(args->map, args->ref, rop, args->count, true);
 
     if (x_done) {
         storage_remove_item(args->map, args->xref);
@@ -352,48 +419,34 @@ eval_worker(void *vargs)
 }
 
 int
-acirc_eval_gate(acirc_t *c, acirc_eval_f eval_f, acirc_free_f free_f, acirc_op op,
-                ref_t ref, ref_t xref, ref_t yref, ssize_t count, void *extra)
+acirc_eval_gate(acirc_t *c, acirc_eval_f eval_f, acirc_free_f free_f,
+                acirc_op op, ref_t ref, ref_t xref, ref_t yref,
+                ssize_t count, void *extra)
 {
-    bool x_done = false, y_done = false;
-    if (c->pool) {
-        eval_args_t *args;
-        args = calloc(1, sizeof args[0]);
-        args->eval = eval_f;
-        args->free = free_f;
-        args->map = &c->map;
-        args->op = op;
-        args->ref = ref;
-        args->count = count;
-        args->xref = xref;
-        args->yref = yref;
-        args->extra = extra;
+    eval_args_t *args;
+    if ((args = calloc(1, sizeof args[0])) == NULL)
+        return ACIRC_ERR;
+    args->eval = eval_f;
+    args->free = free_f;
+    args->map = &c->map;
+    args->op = op;
+    args->ref = ref;
+    args->count = count;
+    args->xref = xref;
+    args->yref = yref;
+    args->extra = extra;
+    if (c->pool)
         threadpool_add_job(c->pool, eval_worker, args);
-    } else {
-        void *x, *y, *out;
-        x = storage_get(&c->map, xref);
-        y = storage_get(&c->map, yref);
-        out = eval_f(ref, op, xref, x, yref, y, extra);
-        storage_put(&c->map, ref, out, count, true);
-        if (x_done) {
-            storage_remove_item(&c->map, xref);
-            if (free_f)
-                free_f(x, extra);
-        }
-        if (y_done) {
-            storage_remove_item(&c->map, yref);
-            if (free_f)
-                free_f(y, extra);
-        }
-    }
+    else
+        eval_worker(args);
     return ACIRC_OK;
 }
 
 static void
 output_worker(void *vargs)
 {
-    void *x = NULL;
     output_args_t *args = vargs;
+    void *x;
     x = storage_get(args->map, args->ref);
     args->outputs[args->i] = args->output ? args->output(args->ref, args->i, x, args->extra) : x;
     free(args);
@@ -403,29 +456,19 @@ int
 acirc_eval_output(acirc_t *c, acirc_output_f output_f, void **outputs, ref_t i,
                   ref_t ref, void *extra)
 {
-    if (c->pool) {
-        output_args_t *args;
-        args = calloc(1, sizeof args[0]);
-        args->output = output_f;
-        args->outputs = outputs;
-        args->map = &c->map;
-        args->i = i;
-        args->ref = ref;
-        args->extra = extra;
+    output_args_t *args;
+    if ((args = calloc(1, sizeof args[0])) == NULL)
+        return ACIRC_ERR;
+    args->output = output_f;
+    args->outputs = outputs;
+    args->map = &c->map;
+    args->i = i;
+    args->ref = ref;
+    args->extra = extra;
+    if (c->pool)
         threadpool_add_job(c->pool, output_worker, args);
-    } else {
-        void *x;
-        x = storage_get(&c->map, ref);
-        outputs[i] = output_f ? output_f(ref, i, x, extra) : x;
-    }
-    return ACIRC_OK;
-}
-
-int
-acirc_eval_symlens(acirc_t *c, size_t *vals, size_t n)
-{
-    c->symlens = vals;
-    c->nsymbols = n;
+    else
+        output_worker(args);
     return ACIRC_OK;
 }
 
@@ -436,11 +479,11 @@ acirc_op2str(acirc_op op)
 {
     switch (op) {
     case ACIRC_OP_ADD:
-        return "ADD";
+        return "add";
     case ACIRC_OP_SUB:
-        return "SUB";
+        return "sub";
     case ACIRC_OP_MUL:
-        return "MUL";
+        return "mul";
     }
     return "";
 }
@@ -448,15 +491,14 @@ acirc_op2str(acirc_op op)
 acirc_op
 acirc_str2op(const char *s)
 {
-    if (strcmp(s, "ADD") == 0) {
+    if (strcmp(s, "add") == 0) {
         return ACIRC_OP_ADD;
-    } else if (strcmp(s, "SUB") == 0) {
+    } else if (strcmp(s, "sub") == 0) {
         return ACIRC_OP_SUB;
-    } else if (strcmp(s, "MUL") == 0) {
+    } else if (strcmp(s, "mul") == 0) {
         return ACIRC_OP_MUL;
     } else {
         fprintf(stderr, "error: unknown acirc operation '%s'\n", s);
         abort();
     }
 }
-

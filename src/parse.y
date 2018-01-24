@@ -47,7 +47,8 @@ typedef struct nlist_t {
     struct nlist_t *nlist;
 };
 
-%token NINPUTS NREFS CONSTS OUTPUTS SECRETS SYMLEN BASE BINARY TEST START INPUT CONST
+%token NINPUTS NREFS CONSTS OUTPUTS SECRETS SYMLENS SIGMAS BINARY TEST START
+%token INPUT CONST SECRET
 %token COLON INF ENDL
 %token  <ref>           NUM
 %token  <str>           STR
@@ -61,7 +62,14 @@ typedef struct nlist_t {
 prog:           lines | prelims start lines
                 ;
 
-prelims:        binary ninputs nrefs consts outputs secrets symlen base tests
+prelims:        binary ninputs nrefs consts secrets outputs symlens sigmas tests
+                ;
+
+binary:         %empty | BINARY ENDL
+                {
+                    if (!c->circuit)
+                        c->binary = true;
+                }
                 ;
 
 ninputs:        NINPUTS NUM ENDL
@@ -76,29 +84,25 @@ nrefs:          NREFS NUM ENDL
                     if (!c->circuit)
                         c->nrefs = $2;
                 }
-        ;
+                ;
 
-symlen:         SYMLEN numlist ENDL
+sigmas:         %empty | SIGMAS numlist ENDL
+                {
+                    nlist_t *list = $2;
+                    if (!c->circuit) {
+                        acirc_eval_sigmas(c, list->data, list->n);
+                        free(list);
+                    }
+                }
+                ;
+
+symlens:        SYMLENS numlist ENDL
                 {
                     nlist_t *list = $2;
                     if (!c->circuit) {
                         acirc_eval_symlens(c, list->data, list->n);
                         free(list);
                     }
-                }
-                ;
-
-base:           %empty | BASE NUM ENDL
-                {
-                    if (!c->circuit)
-                        c->base = $2;
-                }
-                ;
-
-binary:         %empty | BINARY ENDL
-                {
-                    if (!c->circuit)
-                        c->binary = true;
                 }
                 ;
 
@@ -126,7 +130,7 @@ start:          START ENDL
 lines:          lines line | line
                 ;
 
-line:           input | const | gate
+line:           input | const | secret | gate
                 ;
 
 input:          NUM INPUT NUM ENDL
@@ -141,14 +145,26 @@ input:          NUM INPUT NUM ENDL
                 }
                 ;
 
-const:          NUM CONST ENDL
+const:          NUM CONST NUM ENDL
                 {
-                    if (acirc_eval_const(c, const_f, $1, -1, extra) == ACIRC_ERR)
+                    if (acirc_eval_const(c, const_f, $1, $3, -1, extra) == ACIRC_ERR)
                         YYABORT;
                 }
-        |       NUM CONST COLON NUM ENDL
+        |       NUM CONST NUM COLON NUM ENDL
                 {
-                    if (acirc_eval_const(c, const_f, $1, $4, extra) == ACIRC_ERR)
+                    if (acirc_eval_const(c, const_f, $1, $3, $5, extra) == ACIRC_ERR)
+                        YYABORT;
+                }
+                ;
+
+secret:         NUM SECRET NUM ENDL
+                {
+                    if (acirc_eval_secret(c, const_f, $1, $3, -1, extra) == ACIRC_ERR)
+                        YYABORT;
+                }
+        |       NUM SECRET NUM COLON NUM ENDL
+                {
+                    if (acirc_eval_secret(c, const_f, $1, $3, $5, extra) == ACIRC_ERR)
                         YYABORT;
                 }
                 ;
@@ -186,7 +202,7 @@ numlist:        %empty
                 }
                 ;
 
-consts:         CONSTS numlist ENDL
+consts:         %empty | CONSTS numlist ENDL
                 {
                     nlist_t *list = $2;
                     if (!c->circuit) {
@@ -195,6 +211,15 @@ consts:         CONSTS numlist ENDL
                     }
                 }
                 ;
+
+secrets:        %empty | SECRETS numlist ENDL
+                {
+                    nlist_t *list = $2;
+                    if (!c->circuit) {
+                        acirc_eval_secrets(c, (long *) list->data, list->n);
+                        free(list);
+                    }
+                };
 
 outputs:        OUTPUTS numlist ENDL
                 {
@@ -205,15 +230,5 @@ outputs:        OUTPUTS numlist ENDL
                     }
                 }
                 ;
-
-secrets:        %empty | SECRETS numlist ENDL
-                {
-                    nlist_t *list = $2;
-                    if (!c->circuit) {
-                        /* acirc_eval_secrets(c, list->data, list->n); */
-                        free(list->data);
-                        free(list);
-                    }
-                };
 
 %%

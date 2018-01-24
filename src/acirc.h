@@ -33,7 +33,6 @@ void acirc_free(acirc_t *c);
 
 long acirc_ngates(acirc_t *c);
 long acirc_nmuls(acirc_t *c);
-size_t acirc_nrefs(const acirc_t *c);
 
 long * acirc_degrees(acirc_t *c);
 long   acirc_max_degree(acirc_t *c);
@@ -54,17 +53,20 @@ void ** acirc_traverse(acirc_t *c, acirc_input_f input_f, acirc_const_f const_f,
 
 size_t acirc_ninputs(const acirc_t *c);
 size_t acirc_nconsts(const acirc_t *c);
+size_t acirc_nsecrets(const acirc_t *c);
 size_t acirc_noutputs(const acirc_t *c);
 size_t acirc_nsymbols(const acirc_t *c);
+size_t acirc_nrefs(const acirc_t *c);
 size_t acirc_symlen(const acirc_t *c, size_t i);
-bool acirc_is_binary(const acirc_t *c);
+bool   acirc_is_sigma(const acirc_t *c, size_t i);
+bool   acirc_is_binary(const acirc_t *c);
+long   acirc_const(acirc_t *c, size_t i);
+long   acirc_secret(acirc_t *c, size_t i);
 
 size_t acirc_ntests(const acirc_t *c);
 long * acirc_test_input(const acirc_t *c, size_t i);
 long * acirc_test_output(const acirc_t *c, size_t i);
 bool acirc_test(acirc_t *c);
-
-long acirc_const(acirc_t *c, size_t i);
 
 acirc_op acirc_str2op(const char *str);
 char *   acirc_op2str(acirc_op op);

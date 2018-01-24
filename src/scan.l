@@ -17,32 +17,32 @@
 
 %%
 
-input       { return INPUT; }
-const       { return CONST; }
+input  { return INPUT; }
+const  { return CONST; }
+secret { return SECRET; }
 
-ADD|SUB|MUL {
-    yylval.op = acirc_str2op(yytext);
-    return GATE;
-}
+add    { yylval.op = ACIRC_OP_ADD; return GATE; }
+sub    { yylval.op = ACIRC_OP_SUB; return GATE; }
+mul    { yylval.op = ACIRC_OP_MUL; return GATE; }
 
 <test>\n { BEGIN(INITIAL); return ENDL; }
 <test>[0-9a-z]+ {yylval.str = strdup(yytext); return STR; }
 
-\n       { return ENDL; }
 [ \r\t]+                        /* ignore whitespace */
 #.*\n                           /* ignore comments */
+\n       { return ENDL; }
 :        { return COLON; }
 inf      { return INF; }
 
 [0-9]+     { yylval.ref = (ref_t) atoi(yytext); return NUM; }
+:binary    { return BINARY; }
 :ninputs   { return NINPUTS; }
 :nrefs     { return NREFS; }
 :consts    { return CONSTS; }
-:outputs   { return OUTPUTS; }
 :secrets   { return SECRETS; }
-:symlen    { return SYMLEN; }
-:base      { return BASE; }
-:binary    { return BINARY; }
+:outputs   { return OUTPUTS; }
+:symlen   { return SYMLENS; }
+:sigma    { return SIGMAS; }
 :test      { BEGIN(test); return TEST; }
 :start     { return START; }
 
