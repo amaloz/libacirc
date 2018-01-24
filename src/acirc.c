@@ -93,7 +93,7 @@ bool
 acirc_is_sigma(const acirc_t *c, size_t i)
 {
     if (i >= c->nsymbols)
-        return 0;
+        return false;
     return c->sigmas[i] ? true : false;
 }
 
