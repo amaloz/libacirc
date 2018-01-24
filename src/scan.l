@@ -41,8 +41,8 @@ inf      { return INF; }
 :consts    { return CONSTS; }
 :secrets   { return SECRETS; }
 :outputs   { return OUTPUTS; }
-:symlen   { return SYMLENS; }
-:sigma    { return SIGMAS; }
+:symlens   { return SYMLENS; }
+:sigmas    { return SIGMAS; }
 :test      { BEGIN(test); return TEST; }
 :start     { return START; }
 
