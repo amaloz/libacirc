@@ -375,10 +375,8 @@ acirc_eval_test(acirc_t *c, char *in, char *out)
     }
     if ((c->tests = realloc(c->tests, sizeof c->tests[0] * (c->ntests + 1))) == NULL)
         return ACIRC_ERR;
-    c->tests[c->ntests].inps = calloc(acirc_ninputs(c),
-                                      sizeof c->tests[c->ntests].inps[0]);
-    c->tests[c->ntests].outs = calloc(acirc_noutputs(c),
-                                      c->tests[c->ntests].outs[0]);
+    c->tests[c->ntests].inps = calloc(acirc_ninputs(c), sizeof(long));
+    c->tests[c->ntests].outs = calloc(acirc_noutputs(c), sizeof(long));
     for (size_t i = 0; i < acirc_ninputs(c); ++i)
         c->tests[c->ntests].inps[i] = char2long(in[i]);
     for (size_t i = 0; i < acirc_noutputs(c); ++i)
