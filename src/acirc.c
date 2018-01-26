@@ -94,7 +94,7 @@ acirc_is_sigma(const acirc_t *c, size_t i)
 {
     if (i >= c->nsymbols)
         return false;
-    return c->sigmas[i] ? true : false;
+    return c->sigmas && c->sigmas[i] ? true : false;
 }
 
 long
