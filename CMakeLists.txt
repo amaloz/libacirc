@@ -32,7 +32,7 @@ set(acirc_HEADERS
 add_library(acirc SHARED ${acirc_SOURCES})
 target_link_libraries(acirc PUBLIC threadpool gmp)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wpedantic -Werror -Wno-unused-function -std=gnu11 -march=native")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wpedantic -Wno-unused-function -std=gnu11 -march=native")
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -pg -ggdb -O0")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3")
 
