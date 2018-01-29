@@ -397,15 +397,15 @@ eval_worker(void *vargs)
     bool x_done, y_done;
     eval_args_t *args = vargs;
 
-    if (args->parallel) {
-        while (x == NULL)
+    /* if (args->parallel) { */
+    /*     while (x == NULL) */
             x = storage_get(args->map, args->xref);
-        while (y == NULL)
+        /* while (y == NULL) */
             y = storage_get(args->map, args->yref);
-    } else {
-        x = storage_get(args->map, args->xref);
-        y = storage_get(args->map, args->yref);
-    }
+    /* } else { */
+    /*     x = storage_get(args->map, args->xref); */
+    /*     y = storage_get(args->map, args->yref); */
+    /* } */
 
     rop = args->eval(args->ref, args->op, args->xref, x, args->yref, y, args->extra);
 
@@ -458,12 +458,12 @@ output_worker(void *vargs)
     output_args_t *args = vargs;
     void *x = NULL;
 
-    if (args->parallel) {
-        while (x == NULL)
-            x = storage_get(args->map, args->ref);
-    } else {
+    /* if (args->parallel) { */
+    /*     while (x == NULL) */
+    /*         x = storage_get(args->map, args->ref); */
+    /* } else { */
         x = storage_get(args->map, args->ref);
-    }
+    /* } */
     args->outputs[args->i] = args->output ? args->output(args->ref, args->i, x, args->extra) : x;
     free(args);
 }
