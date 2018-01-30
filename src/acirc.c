@@ -20,8 +20,6 @@ typedef struct {
     ref_t xref;
     ref_t yref;
     void *extra;
-    /* XXX hack until we get pthread locking working */
-    bool parallel;
 } eval_args_t;
 
 typedef struct {
@@ -32,8 +30,6 @@ typedef struct {
     ref_t i;
     ref_t ref;
     void *extra;
-    /* XXX hack until we get pthread locking working */
-    bool parallel;
 } output_args_t;
 
 extern FILE *yyin;
@@ -396,15 +392,8 @@ eval_worker(void *vargs)
     bool x_done, y_done;
     eval_args_t *args = vargs;
 
-    /* if (args->parallel) { */
-    /*     while (x == NULL) */
-            x = storage_get(args->map, args->xref);
-        /* while (y == NULL) */
-            y = storage_get(args->map, args->yref);
-    /* } else { */
-    /*     x = storage_get(args->map, args->xref); */
-    /*     y = storage_get(args->map, args->yref); */
-    /* } */
+    x = storage_get(args->map, args->xref);
+    y = storage_get(args->map, args->yref);
 
     rop = args->eval(args->ref, args->op, args->xref, x, args->yref, y, args->extra);
 
@@ -443,10 +432,9 @@ acirc_eval_gate(acirc_t *c, acirc_eval_f eval_f, acirc_free_f free_f,
     args->xref = xref;
     args->yref = yref;
     args->extra = extra;
-    if (c->pool) {
-        args->parallel = true;
+    if (c->pool)
         threadpool_add_job(c->pool, eval_worker, args);
-    } else
+    else
         eval_worker(args);
     return ACIRC_OK;
 }
@@ -457,12 +445,7 @@ output_worker(void *vargs)
     output_args_t *args = vargs;
     void *x = NULL;
 
-    /* if (args->parallel) { */
-    /*     while (x == NULL) */
-    /*         x = storage_get(args->map, args->ref); */
-    /* } else { */
-        x = storage_get(args->map, args->ref);
-    /* } */
+    x = storage_get(args->map, args->ref);
     args->outputs[args->i] = args->output ? args->output(args->ref, args->i, x, args->extra) : x;
     free(args);
 }
@@ -480,10 +463,9 @@ acirc_eval_output(acirc_t *c, acirc_output_f output_f, void **outputs, ref_t i,
     args->i = i;
     args->ref = ref;
     args->extra = extra;
-    if (c->pool) {
-        args->parallel = true;
+    if (c->pool)
         threadpool_add_job(c->pool, output_worker, args);
-    } else
+    else
         output_worker(args);
     return ACIRC_OK;
 }
