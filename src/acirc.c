@@ -397,8 +397,8 @@ eval_worker(void *vargs)
     bool x_done, y_done;
     eval_args_t *args = vargs;
 
-    x = storage_get(args->map, args->xref, args->fread);
-    y = storage_get(args->map, args->yref, args->fread);
+    x = storage_get(args->map, args->xref, args->fread, args->extra);
+    y = storage_get(args->map, args->yref, args->fread, args->extra);
 
     if (args->state != REF_SKIP)
         rop = args->eval(args->ref, args->op, args->xref, x, args->yref, y, args->extra);
@@ -410,12 +410,12 @@ eval_worker(void *vargs)
                 args->state == REF_SAVE);
 
     if (x_done) {
-        storage_remove_item(args->map, args->xref, args->fwrite);
+        storage_remove_item(args->map, args->xref, args->fwrite, args->extra);
         if (args->free && x)
             args->free(x, args->extra);
     }
     if (y_done) {
-        storage_remove_item(args->map, args->yref, args->fwrite);
+        storage_remove_item(args->map, args->yref, args->fwrite, args->extra);
         if (args->free && y)
             args->free(y, args->extra);
     }
@@ -456,7 +456,7 @@ output_worker(void *vargs)
     output_args_t *args = vargs;
     void *x = NULL;
 
-    x = storage_get(args->map, args->ref, args->fread);
+    x = storage_get(args->map, args->ref, args->fread, args->extra);
     args->outputs[args->i] = args->output ? args->output(args->ref, args->i, x, args->extra) : x;
     free(args);
 }

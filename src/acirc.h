@@ -20,8 +20,8 @@ typedef void * (*acirc_eval_f)(size_t, acirc_op, size_t, const void *, size_t, c
 typedef void * (*acirc_output_f)(size_t, size_t, void *, void *);
 typedef void * (*acirc_copy_f)(void *, void *);
 typedef void   (*acirc_free_f)(void *, void *);
-typedef void   (*acirc_fwrite_f)(void *, FILE *);
-typedef void * (*acirc_fread_f)(FILE *);
+typedef void   (*acirc_fwrite_f)(void *, void *, FILE *);
+typedef void * (*acirc_fread_f)(void *, FILE *);
 
 typedef struct {
     acirc_input_f input_f;

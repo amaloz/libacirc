@@ -69,7 +69,7 @@ storage_put(storage_t *m, size_t ref, void *value, ssize_t count,
 }
 
 void *
-storage_get(storage_t *m, size_t ref, acirc_fread_f fread_f)
+storage_get(storage_t *m, size_t ref, acirc_fread_f fread_f, void *extra)
 {
     void *data;
 
@@ -85,7 +85,7 @@ storage_get(storage_t *m, size_t ref, acirc_fread_f fread_f)
             goto cleanup;
         if ((fp = fopen(fname, "r")) == NULL)
             goto cleanup;
-        data = m->array[ref].value = fread_f(fp);
+        data = m->array[ref].value = fread_f(extra, fp);
     cleanup:
         if (fp)
             fclose(fp);
@@ -107,7 +107,8 @@ storage_update_item_count(storage_t *m, size_t ref)
 }
 
 void
-storage_remove_item(storage_t *m, size_t ref, acirc_fwrite_f fwrite_f)
+storage_remove_item(storage_t *m, size_t ref, acirc_fwrite_f fwrite_f,
+                    void *extra)
 {
     if (ref >= m->nrefs)
         return;
@@ -121,7 +122,7 @@ storage_remove_item(storage_t *m, size_t ref, acirc_fwrite_f fwrite_f)
             goto cleanup;
         if ((fp = fopen(fname, "w")) == NULL)
             goto cleanup;
-        fwrite_f(m->array[ref].value, fp);
+        fwrite_f(m->array[ref].value, extra, fp);
     cleanup:
         if (fp)
             fclose(fp);
