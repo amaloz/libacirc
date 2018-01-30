@@ -13,13 +13,16 @@ _eval_f(size_t ref, acirc_op op, size_t xref, const void *x, size_t yref, const 
     return NULL;
 }
 
-long
-acirc_nmuls(acirc_t *c)
+size_t
+acirc_nmuls(const acirc_t *c_)
 {
-    void **outputs;
-    long count = 0;
+    acirc_t *c = (acirc_t *) c_;
+    void **outputs = NULL;
 
-    outputs = acirc_traverse(c, NULL, NULL, _eval_f, NULL, NULL, &count, 0);
-    free(outputs);
-    return count;
+    if (c->_nmuls)
+        return c->_nmuls;
+    outputs = acirc_traverse(c, NULL, NULL, _eval_f, NULL, NULL, &c->_nmuls, 0);
+    if (outputs)
+        free(outputs);
+    return c->_nmuls;
 }

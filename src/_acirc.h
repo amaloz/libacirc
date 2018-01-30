@@ -37,7 +37,12 @@ struct acirc_t {
 
     storage_t map;
     threadpool *pool;
-    ssize_t _max_const_degree;
+    size_t _ngates;
+    size_t _nmuls;
+    size_t _max_depth;
+    size_t _max_degree;
+    size_t _max_const_degree;
+    size_t _delta;
 };
 
 int acirc_eval_input(acirc_t *c, acirc_input_f f, ref_t ref, size_t idx,

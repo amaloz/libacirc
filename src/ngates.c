@@ -12,13 +12,15 @@ _eval_f(size_t ref, acirc_op op, size_t xref, const void *x, size_t yref, const 
     return NULL;
 }
 
-long
-acirc_ngates(acirc_t *c)
+size_t
+acirc_ngates(const acirc_t *c_)
 {
+    acirc_t *c = (acirc_t *) c_;
     void **outputs;
-    long count = 0;
 
-    outputs = acirc_traverse(c, NULL, NULL, _eval_f, NULL, NULL, &count, 0);
+    if (c->_ngates)
+        return c->_ngates;
+    outputs = acirc_traverse(c, NULL, NULL, _eval_f, NULL, NULL, &c->_ngates, 0);
     free(outputs);
-    return count;
+    return c->_ngates;
 }

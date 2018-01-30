@@ -19,7 +19,7 @@ typedef void * (*acirc_const_f)(size_t, size_t, long, void *);
 typedef void * (*acirc_eval_f)(size_t, acirc_op, size_t, const void *, size_t, const void *, void *);
 typedef void * (*acirc_output_f)(size_t, size_t, void *, void *);
 typedef void * (*acirc_copy_f)(void *, void *);
-typedef void (*acirc_free_f)(void *, void *);
+typedef void   (*acirc_free_f)(void *, void *);
 
 typedef struct {
     acirc_input_f input_f;
@@ -31,21 +31,21 @@ typedef struct {
 acirc_t *acirc_new(const char *fname, bool mmapped);
 void acirc_free(acirc_t *c);
 
-long acirc_ngates(acirc_t *c);
-long acirc_nmuls(acirc_t *c);
+size_t acirc_ngates(const acirc_t *c);
+size_t acirc_nmuls(const acirc_t *c);
 
-long * acirc_degrees(acirc_t *c);
-long   acirc_max_degree(acirc_t *c);
-long * acirc_const_degrees(acirc_t *c);
-long   acirc_max_const_degree(acirc_t *c);
-long * acirc_var_degrees(acirc_t *c, size_t k);
-long   acirc_max_var_degree(acirc_t *c, size_t k);
-long * acirc_depths(acirc_t *c);
-long   acirc_max_depth(acirc_t *c);
-long   acirc_delta(acirc_t *c);
+size_t * acirc_degrees(const acirc_t *c);
+size_t   acirc_max_degree(const acirc_t *c);
+size_t * acirc_const_degrees(const acirc_t *c);
+size_t   acirc_max_const_degree(const acirc_t *c);
+size_t * acirc_var_degrees(const acirc_t *c, size_t k);
+size_t   acirc_max_var_degree(const acirc_t *c, size_t k);
+size_t * acirc_depths(const acirc_t *c);
+size_t   acirc_max_depth(const acirc_t *c);
+size_t   acirc_delta(const acirc_t *c);
 
-long * acirc_eval(acirc_t *c, long *xs, long *ys);
-mpz_t ** acirc_eval_mpz(acirc_t *c, mpz_t **xs, mpz_t **ys, mpz_t modulus);
+long * acirc_eval(const acirc_t *c, const long *xs, const long *ys);
+mpz_t ** acirc_eval_mpz(const acirc_t *c, mpz_t **xs, mpz_t **ys, const mpz_t modulus);
 
 void ** acirc_traverse(acirc_t *c, acirc_input_f input_f, acirc_const_f const_f,
                        acirc_eval_f eval_f, acirc_output_f output_f,
@@ -60,8 +60,8 @@ size_t acirc_nrefs(const acirc_t *c);
 size_t acirc_symlen(const acirc_t *c, size_t i);
 bool   acirc_is_sigma(const acirc_t *c, size_t i);
 bool   acirc_is_binary(const acirc_t *c);
-long   acirc_const(acirc_t *c, size_t i);
-long   acirc_secret(acirc_t *c, size_t i);
+long   acirc_const(const acirc_t *c, size_t i);
+long   acirc_secret(const acirc_t *c, size_t i);
 
 size_t acirc_ntests(const acirc_t *c);
 long * acirc_test_input(const acirc_t *c, size_t i);

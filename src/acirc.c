@@ -102,7 +102,7 @@ acirc_is_sigma(const acirc_t *c, size_t i)
 }
 
 long
-acirc_const(acirc_t *c, size_t i)
+acirc_const(const acirc_t *c, size_t i)
 {
     if (i >= c->nconsts)
         return 0;
@@ -110,7 +110,7 @@ acirc_const(acirc_t *c, size_t i)
 }
 
 long
-acirc_secret(acirc_t *c, size_t i)
+acirc_secret(const acirc_t *c, size_t i)
 {
     if (i >= c->nsecrets)
         return 0;
@@ -169,9 +169,6 @@ acirc_new(const char *fname, bool mmapped)
         }
     }
 
-    /* set defaults */
-    c->_max_const_degree = -1;
-
     yyin = c->fp;
     if (yyparse(c, NULL, NULL, NULL, NULL, NULL) != 0) {
         fprintf(stderr, "error: parsing circuit failed\n");
@@ -215,20 +212,21 @@ acirc_traverse(acirc_t *c, acirc_input_f input_f, acirc_const_f const_f,
                acirc_eval_f eval_f, acirc_output_f output_f,
                acirc_free_f free_f, void *extra, size_t nthreads)
 {
-    void **outputs;
+    void **outputs = NULL;
 
     storage_init(&c->map, c->nrefs);
     c->pool = nthreads ? threadpool_create(nthreads) : NULL;
     if (yyparse(c, input_f, const_f, eval_f, free_f, extra) != 0) {
         fprintf(stderr, "error: parsing circuit failed\n");
-        return NULL;
+        goto cleanup;
     }
     if ((outputs = calloc(acirc_noutputs(c), sizeof outputs[0])) == NULL) {
         fprintf(stderr, "error: memory allocation failed\n");
-        return NULL;
+        goto cleanup;
     }
     for (size_t i = 0; i < acirc_noutputs(c); ++i)
         acirc_eval_output(c, output_f, outputs, i, c->outrefs[i], extra);
+cleanup:
     if (c->pool)
         threadpool_destroy(c->pool);
     storage_clear(&c->map, free_f, extra);

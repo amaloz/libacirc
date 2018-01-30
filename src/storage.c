@@ -39,7 +39,7 @@ storage_clear(storage_t *m, acirc_free_f f, void *extra)
 }
 
 int
-storage_put(storage_t *m, ref_t ref, void *value, ssize_t count, bool mine)
+storage_put(storage_t *m, size_t ref, void *value, ssize_t count, bool mine)
 {
     if (ref >= m->nrefs)
         return ACIRC_ERR;
@@ -53,7 +53,7 @@ storage_put(storage_t *m, ref_t ref, void *value, ssize_t count, bool mine)
 }
 
 void *
-storage_get(storage_t *m, ref_t ref)
+storage_get(storage_t *m, size_t ref)
 {
     void *data;
 
@@ -66,7 +66,7 @@ storage_get(storage_t *m, ref_t ref)
 }
 
 bool
-storage_update_item_count(storage_t *m, ref_t ref)
+storage_update_item_count(storage_t *m, size_t ref)
 {
     bool result;
     pthread_mutex_lock(&m->array[ref].lock);
@@ -76,7 +76,7 @@ storage_update_item_count(storage_t *m, ref_t ref)
 }
 
 void
-storage_remove_item(storage_t *m, ref_t ref)
+storage_remove_item(storage_t *m, size_t ref)
 {
     if (ref >= m->nrefs)
         return;
