@@ -43,8 +43,6 @@ storage_put(storage_t *m, size_t ref, void *value, ssize_t count, bool mine)
 {
     if (ref >= m->nrefs)
         return ACIRC_ERR;
-    if (pthread_mutex_trylock(&m->array[ref].lock) == 0)
-        abort();
     m->array[ref].value = value;
     m->array[ref].count = count;
     m->array[ref].mine = mine;
