@@ -169,9 +169,6 @@ acirc_new(const char *fname, bool mmapped)
         }
     }
 
-    /* set defaults */
-    c->_max_const_degree = -1;
-
     yyin = c->fp;
     if (yyparse(c, NULL, NULL, NULL, NULL, NULL) != 0) {
         fprintf(stderr, "error: parsing circuit failed\n");
