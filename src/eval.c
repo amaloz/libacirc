@@ -5,8 +5,8 @@
 #include <stdlib.h>
 
 typedef struct {
-    long *xs;
-    long *ys;
+    const long *xs;
+    const long *ys;
 } eval_t;
 
 static void *
@@ -48,12 +48,10 @@ _acirc_eval(size_t ref, acirc_op op, size_t xref, const void *x_, size_t yref, c
 }
 
 long *
-acirc_eval(acirc_t *c, long *xs, long *ys)
+acirc_eval(const acirc_t *c, const long *xs, const long *ys)
 {
-    eval_t args;
-    args.xs = xs;
-    args.ys = ys;
-    return (long *) acirc_traverse(c, _acirc_input, _acirc_const, _acirc_eval, NULL, NULL, &args, 0);
+    eval_t args = { .xs = xs, .ys = ys };
+    return (long *) acirc_traverse((acirc_t *) c, _acirc_input, _acirc_const, _acirc_eval, NULL, NULL, &args, 0);
 }
 
 typedef struct {
@@ -78,7 +76,7 @@ _acirc_input_mpz(size_t ref, size_t i, void *args_)
 {
     (void) ref;
     eval_mpz_t *args = args_;
-    return _acirc_copy_mpz(args->xs[i], args);
+    return _acirc_copy_mpz((mpz_t *) args->xs[i], args);
 }
 
 static void *
@@ -87,7 +85,7 @@ _acirc_const_mpz(size_t ref, size_t i, long val, void *args_)
     (void) ref;
     eval_mpz_t *args = args_;
     if (args->ys) {
-        return _acirc_copy_mpz(args->ys[i], args);
+        return _acirc_copy_mpz((mpz_t *) args->ys[i], args);
     } else {
         mpz_t *x;
         x = calloc(1, sizeof x[0]);
@@ -142,13 +140,10 @@ _acirc_free_mpz(void *x_, void *_)
 }
 
 mpz_t **
-acirc_eval_mpz(acirc_t *c, mpz_t **xs, mpz_t **ys, mpz_t modulus)
+acirc_eval_mpz(const acirc_t *c, mpz_t **xs, mpz_t **ys, const mpz_t modulus)
 {
-    eval_mpz_t s;
-    s.xs = xs;
-    s.ys = ys;
-    s.modulus = (mpz_t *) modulus;
-    return (mpz_t **) acirc_traverse(c, _acirc_input_mpz, _acirc_const_mpz,
-                                     _acirc_eval_mpz, _acirc_output_mpz,
-                                     _acirc_free_mpz, &s, 0);
+    eval_mpz_t s = { .xs = xs, .ys = ys, .modulus = (mpz_t *) modulus };
+    return (mpz_t **) acirc_traverse((acirc_t *) c, _acirc_input_mpz,
+                                     _acirc_const_mpz, _acirc_eval_mpz,
+                                     _acirc_output_mpz, _acirc_free_mpz, &s, 0);
 }

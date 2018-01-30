@@ -49,52 +49,56 @@ _eval_f(size_t ref, acirc_op op, size_t xref, const void *x, size_t yref, const 
     }
 }
 
-long *
-acirc_degrees(acirc_t *c)
+size_t *
+acirc_degrees(const acirc_t *c)
 {
-    return (long *) acirc_traverse(c, _input_one_f, _const_one_f, _eval_f, NULL, NULL, NULL, 0);
+    return (size_t *) acirc_traverse((acirc_t *) c, _input_one_f, _const_one_f,
+                                     _eval_f, NULL, NULL, NULL, 0);
 }
 
-long
-acirc_max_degree(acirc_t *c)
+size_t
+acirc_max_degree(const acirc_t *c_)
 {
-    long max = 0;
-    long *degrees;
+    acirc_t *c = (acirc_t *) c_;
+    size_t *degrees;
+
+    if (c->_max_degree)
+        return c->_max_degree;
 
     if ((degrees = acirc_degrees(c)) == NULL)
-        return -1;
+        return 0;
     for (size_t i = 0; i < acirc_noutputs(c); ++i) {
-        if (degrees[i] > max)
-            max = degrees[i];
+        if (degrees[i] > c->_max_degree)
+            c->_max_degree = degrees[i];
     }
     free(degrees);
-    return max;
+    return c->_max_degree;
 }
 
-long *
-acirc_const_degrees(acirc_t *c)
+size_t *
+acirc_const_degrees(const acirc_t *c)
 {
-    return (long *) acirc_traverse(c, _input_zero_f, _const_one_f, _eval_f, NULL, NULL, NULL, 0);
+    return (size_t *) acirc_traverse((acirc_t *) c, _input_zero_f, _const_one_f,
+                                     _eval_f, NULL, NULL, NULL, 0);
 }
 
-long
-acirc_max_const_degree(acirc_t *c)
+size_t
+acirc_max_const_degree(const acirc_t *c_)
 {
-    long *degrees;
-    long max = 0;
+    acirc_t *c = (acirc_t *) c_;
+    size_t *degrees;
 
-    if (c->_max_const_degree != -1)
+    if (c->_max_const_degree)
         return c->_max_const_degree;
 
     if ((degrees = acirc_const_degrees(c)) == NULL)
-        return -1;
+        return 0;
     for (size_t i = 0; i < acirc_noutputs(c); ++i) {
-        if (degrees[i] > max)
-            max = degrees[i];
+        if (degrees[i] > c->_max_const_degree)
+            c->_max_const_degree = degrees[i];
     }
-    c->_max_const_degree = max;
     free(degrees);
-    return max;
+    return c->_max_const_degree;
 }
 
 typedef struct {
@@ -114,23 +118,24 @@ _input_var_f(size_t ref, size_t i, void *args_)
     return (void *) (long) (i >= lower && i <= upper);
 }
 
-long *
-acirc_var_degrees(acirc_t *c, size_t k)
+size_t *
+acirc_var_degrees(const acirc_t *c, size_t k)
 {
     var_args_t args = {
         .k = k,
-        .circ = c,
+        .circ = (acirc_t *) c,
     };
-    return (long *) acirc_traverse(c, _input_var_f, _const_zero_f, _eval_f, NULL, NULL, &args, 0);
+    return (size_t *) acirc_traverse((acirc_t *) c, _input_var_f, _const_zero_f,
+                                     _eval_f, NULL, NULL, &args, 0);
 }
 
-long
-acirc_max_var_degree(acirc_t *c, size_t k)
+size_t
+acirc_max_var_degree(const acirc_t *c, size_t k)
 {
-    long *degrees;
-    long max = 0;
+    size_t *degrees;
+    size_t max = 0;
     if ((degrees = acirc_var_degrees(c, k)) == NULL)
-        return -1;
+        return 0;
     for (size_t i = 0; i < acirc_noutputs(c); ++i) {
         if (degrees[i] > max)
             max = degrees[i];
@@ -139,14 +144,15 @@ acirc_max_var_degree(acirc_t *c, size_t k)
     return max;
 }
 
-long
-acirc_delta(acirc_t *c)
+size_t
+acirc_delta(const acirc_t *c_)
 {
-    long delta;
-
-    delta = acirc_max_const_degree(c);
+    acirc_t *c = (acirc_t *) c_;
+    if (c->_delta)
+        return c->_delta;
+    c->_delta = acirc_max_const_degree(c);
     for (size_t k = 0 ; k < acirc_nsymbols(c); ++k) {
-        delta += acirc_max_var_degree(c, k);
+        c->_delta += acirc_max_var_degree(c, k);
     }
-    return delta;
+    return c->_delta;
 }

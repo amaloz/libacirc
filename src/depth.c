@@ -27,24 +27,27 @@ _eval_f(size_t ref, acirc_op op, size_t xref, const void *x, size_t yref, const 
     return (void *) ((x_ > y_ ? x_ : y_) + 1);
 }
 
-long *
-acirc_depths(acirc_t *c)
+size_t *
+acirc_depths(const acirc_t *c)
 {
-    return (long *) acirc_traverse(c, _input_f, _const_f, _eval_f, NULL, NULL, NULL, 0);
+    return (size_t *) acirc_traverse((acirc_t *) c, _input_f, _const_f, _eval_f,
+                                     NULL, NULL, NULL, 0);
 }
 
-long
-acirc_max_depth(acirc_t *c)
+size_t
+acirc_max_depth(const acirc_t *c_)
 {
-    long *depths;
-    long max = 0;
+    acirc_t *c = (acirc_t *) c_;
+    size_t *depths;
 
+    if (c->_max_depth)
+        return c->_max_depth;
     if ((depths = acirc_depths(c)) == NULL)
-        return -1;
+        return 0;
     for (size_t i = 0; i < acirc_noutputs(c); ++i) {
-        if (depths[i] > max)
-            max = depths[i];
+        if (depths[i] > c->_max_depth)
+            c->_max_depth = depths[i];
     }
     free(depths);
-    return max;
+    return c->_max_depth;
 }
