@@ -212,11 +212,12 @@ void **
 acirc_traverse(acirc_t *c, acirc_input_f input_f, acirc_const_f const_f,
                acirc_eval_f eval_f, acirc_output_f output_f,
                acirc_free_f free_f, acirc_fwrite_f fwrite_f,
-               acirc_fread_f fread_f, void *extra, size_t nthreads)
+               acirc_fread_f fread_f, const char *dirname,
+               void *extra, size_t nthreads)
 {
     void **outputs = NULL;
 
-    storage_init(&c->map, c->nrefs, NULL);
+    storage_init(&c->map, c->nrefs, dirname);
     c->pool = nthreads ? threadpool_create(nthreads) : NULL;
     if (yyparse(c, input_f, const_f, eval_f, free_f, fwrite_f, fread_f, extra) != 0) {
         fprintf(stderr, "error: parsing circuit failed\n");

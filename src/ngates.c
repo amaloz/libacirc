@@ -20,7 +20,8 @@ acirc_ngates(const acirc_t *c_)
 
     if (c->_ngates)
         return c->_ngates;
-    outputs = acirc_traverse(c, NULL, NULL, _eval_f, NULL, NULL, NULL, NULL, &c->_ngates, 0);
+    outputs = acirc_traverse(c, NULL, NULL, _eval_f, NULL, NULL, NULL, NULL,
+                             NULL, &c->_ngates, 0);
     free(outputs);
     return c->_ngates;
 }

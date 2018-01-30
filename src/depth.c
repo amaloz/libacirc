@@ -31,7 +31,7 @@ size_t *
 acirc_depths(const acirc_t *c)
 {
     return (size_t *) acirc_traverse((acirc_t *) c, _input_f, _const_f, _eval_f,
-                                     NULL, NULL, NULL, NULL, NULL, 0);
+                                     NULL, NULL, NULL, NULL, NULL, NULL, 0);
 }
 
 size_t
