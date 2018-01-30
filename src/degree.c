@@ -53,7 +53,7 @@ size_t *
 acirc_degrees(const acirc_t *c)
 {
     return (size_t *) acirc_traverse((acirc_t *) c, _input_one_f, _const_one_f,
-                                     _eval_f, NULL, NULL, NULL, 0);
+                                     _eval_f, NULL, NULL, NULL, NULL, NULL, 0);
 }
 
 size_t
@@ -79,7 +79,7 @@ size_t *
 acirc_const_degrees(const acirc_t *c)
 {
     return (size_t *) acirc_traverse((acirc_t *) c, _input_zero_f, _const_one_f,
-                                     _eval_f, NULL, NULL, NULL, 0);
+                                     _eval_f, NULL, NULL, NULL, NULL, NULL, 0);
 }
 
 size_t
@@ -126,7 +126,7 @@ acirc_var_degrees(const acirc_t *c, size_t k)
         .circ = (acirc_t *) c,
     };
     return (size_t *) acirc_traverse((acirc_t *) c, _input_var_f, _const_zero_f,
-                                     _eval_f, NULL, NULL, &args, 0);
+                                     _eval_f, NULL, NULL, NULL, NULL, &args, 0);
 }
 
 size_t

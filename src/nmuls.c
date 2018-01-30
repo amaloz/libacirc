@@ -21,7 +21,7 @@ acirc_nmuls(const acirc_t *c_)
 
     if (c->_nmuls)
         return c->_nmuls;
-    outputs = acirc_traverse(c, NULL, NULL, _eval_f, NULL, NULL, &c->_nmuls, 0);
+    outputs = acirc_traverse(c, NULL, NULL, _eval_f, NULL, NULL, NULL, NULL, &c->_nmuls, 0);
     if (outputs)
         free(outputs);
     return c->_nmuls;

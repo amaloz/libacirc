@@ -51,7 +51,8 @@ long *
 acirc_eval(const acirc_t *c, const long *xs, const long *ys)
 {
     eval_t args = { .xs = xs, .ys = ys };
-    return (long *) acirc_traverse((acirc_t *) c, _acirc_input, _acirc_const, _acirc_eval, NULL, NULL, &args, 0);
+    return (long *) acirc_traverse((acirc_t *) c, _acirc_input, _acirc_const,
+                                   _acirc_eval, NULL, NULL, NULL, NULL, &args, 0);
 }
 
 typedef struct {
@@ -145,5 +146,6 @@ acirc_eval_mpz(const acirc_t *c, mpz_t **xs, mpz_t **ys, const mpz_t modulus)
     eval_mpz_t s = { .xs = xs, .ys = ys, .modulus = (mpz_t *) modulus };
     return (mpz_t **) acirc_traverse((acirc_t *) c, _acirc_input_mpz,
                                      _acirc_const_mpz, _acirc_eval_mpz,
-                                     _acirc_output_mpz, _acirc_free_mpz, &s, 0);
+                                     _acirc_output_mpz, _acirc_free_mpz,
+                                     NULL, NULL, &s, 0);
 }

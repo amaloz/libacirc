@@ -6,6 +6,12 @@
 #include <stdbool.h>
 #include <threadpool.h>
 
+typedef enum {
+    REF_STD,
+    REF_SAVE,
+    REF_SKIP,
+} ref_state_e;
+
 #pragma GCC visibility push(hidden)
 
 typedef size_t ref_t;
@@ -52,8 +58,9 @@ int acirc_eval_const(acirc_t *c, acirc_const_f f, ref_t ref, size_t idx,
 int acirc_eval_secret(acirc_t *c, acirc_const_f f, ref_t ref, size_t idx,
                       ssize_t count, void *extra);
 int acirc_eval_gate(acirc_t *c, acirc_eval_f eval_f, acirc_free_f free_f,
+                    acirc_fwrite_f fwrite_f, acirc_fread_f fread_f,
                     acirc_op op, ref_t ref, ref_t x, ref_t y, ssize_t count,
-                    void *extra);
+                    ref_state_e state, void *extra);
 int acirc_eval_output(acirc_t *c, acirc_output_f output_f, void **outputs,
                       ref_t i, ref_t ref, void *extra);
 int acirc_eval_consts(acirc_t *c, long *vals, size_t n);

@@ -7,6 +7,8 @@
              { acirc_const_f const_f }
              { acirc_eval_f eval_f }
              { acirc_free_f free_f }
+             { acirc_fwrite_f fwrite_f }
+             { acirc_fread_f fread_f }
              { void *extra }
 /* below not available on bison 2.7 */
 %define parse.error verbose
@@ -24,10 +26,11 @@ extern int yylex(void);
 
 void
 yyerror(const acirc_t *c, const acirc_input_f input_f, const acirc_const_f const_f,
-        const acirc_eval_f eval_f, const acirc_free_f free_f, void *extra,
-        const char *m)
+        const acirc_eval_f eval_f, const acirc_free_f free_f, const acirc_fwrite_f fwrite_f,
+        const acirc_fread_f fread_f, void *extra, const char *m)
 {
-    (void) c; (void) input_f; (void) const_f; (void) eval_f; (void) free_f; (void) extra;
+    (void) c; (void) input_f; (void) const_f; (void) eval_f; (void) free_f;
+    (void) fwrite_f; (void) fread_f; (void) extra;
     fprintf(stderr, "error: [line %d] %s\n", yylineno, m);
 }
 
@@ -49,7 +52,7 @@ typedef struct nlist_t {
 
 %token NINPUTS NREFS CONSTS OUTPUTS SECRETS SYMLENS SIGMAS BINARY TEST START
 %token INPUT CONST SECRET
-%token COLON INF ENDL
+%token COLON SAVE SKIP ENDL
 %token  <ref>           NUM
 %token  <str>           STR
 %token  <op>            GATE
@@ -169,17 +172,17 @@ secret:         NUM SECRET NUM ENDL
                 }
                 ;
 
-gate:           NUM GATE NUM NUM ENDL
+gate:           NUM GATE NUM NUM COLON NUM ENDL
                 {
-                    acirc_eval_gate(c, eval_f, free_f, $2, $1, $3, $4, -1, extra);
+                    acirc_eval_gate(c, eval_f, free_f, fwrite_f, fread_f, $2, $1, $3, $4, $6, REF_STD, extra);
                 }
-        |       NUM GATE NUM NUM COLON INF ENDL
+        |       NUM GATE NUM NUM COLON NUM SAVE ENDL
                 {
-                    acirc_eval_gate(c, eval_f, free_f, $2, $1, $3, $4, -1, extra);
+                    acirc_eval_gate(c, eval_f, free_f, fwrite_f, fread_f, $2, $1, $3, $4, $6, REF_SAVE, extra);
                 }
-        |       NUM GATE NUM NUM COLON NUM ENDL
+        |       NUM GATE NUM NUM COLON NUM SKIP ENDL
                 {
-                    acirc_eval_gate(c, eval_f, free_f, $2, $1, $3, $4, $6, extra);
+                    acirc_eval_gate(c, eval_f, free_f, fwrite_f, fread_f, $2, $1, $3, $4, $6, REF_SKIP, extra);
                 }
                 ;
 
