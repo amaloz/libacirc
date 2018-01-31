@@ -40,8 +40,21 @@ typedef struct {
 extern FILE *yyin;
 
 const char *
-acirc_fname(const acirc_t *c) {
+acirc_fname(const acirc_t *c)
+{
     return c->fname;
+}
+
+void
+acirc_set_saved(acirc_t *c)
+{
+    c->saved = true;
+}
+
+bool
+acirc_is_saved(const acirc_t *c)
+{
+    return c->saved;
 }
 
 bool
@@ -411,7 +424,8 @@ eval_worker(void *vargs)
     x = storage_get(args->map, args->xref, args->read, args->extra);
     y = storage_get(args->map, args->yref, args->read, args->extra);
 
-    if (!args->saved || args->state != REF_SKIP)
+    if (args->saved == false || args->state != REF_SKIP
+        || args->read == NULL || args->write == NULL)
         rop = args->eval(args->ref, args->op, args->xref, x, args->yref, y, args->extra);
 
     x_done = storage_update_item_count(args->map, args->xref);
