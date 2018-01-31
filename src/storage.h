@@ -10,7 +10,7 @@ typedef struct data_t data_t;
 typedef struct {
     data_t *array;
     size_t nrefs;
-    const char *dirname;
+    char *dirname;
 } storage_t;
 
 #pragma GCC visibility push(hidden)

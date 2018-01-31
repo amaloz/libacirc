@@ -38,6 +38,11 @@ typedef struct {
 
 extern FILE *yyin;
 
+const char *
+acirc_fname(const acirc_t *c) {
+    return c->fname;
+}
+
 bool
 acirc_is_binary(const acirc_t *c)
 {
@@ -142,6 +147,8 @@ acirc_new(const char *fname, bool mmapped)
     if ((c = calloc(1, sizeof c[0])) == NULL)
         return NULL;
 
+    c->fname = strdup(fname);
+
     if (mmapped) {
         int fd, len;
         struct stat st;
@@ -188,6 +195,8 @@ acirc_free(acirc_t *c)
         return;
     if (c->fp)
         fclose(c->fp);
+    if (c->fname)
+        free(c->fname);
     if (c->consts)
         free(c->consts);
     if (c->secrets)

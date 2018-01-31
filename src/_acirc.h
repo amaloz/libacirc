@@ -23,6 +23,7 @@ typedef struct {
 
 struct acirc_t {
     FILE *fp;
+    char *fname;
     size_t ninputs;
     size_t nrefs;
     size_t nconsts;

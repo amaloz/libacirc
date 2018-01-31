@@ -1,8 +1,10 @@
 #include "storage.h"
 
 #include <assert.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 struct data_t {
     void *value;
@@ -20,9 +22,15 @@ filename(const storage_t *m, size_t ref)
     if (m->dirname == NULL)
         return NULL;
 
+    if (mkdir(m->dirname, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1) {
+        if (errno != EEXIST) {
+            fprintf(stderr, "error: unable to make directory '%s'\n", m->dirname);
+            return NULL;
+        }
+    }
     length = snprintf(NULL, 0, "%s/%lu", m->dirname, ref);
-    fname = calloc(length, sizeof fname[0]);
-    (void) snprintf(fname, length, "%s/%lu", m->dirname, ref);
+    fname = calloc(length + 1, sizeof fname[0]);
+    (void) snprintf(fname, length + 1, "%s/%lu", m->dirname, ref);
     return fname;
 }
 
@@ -31,10 +39,17 @@ storage_init(storage_t *m, size_t nrefs, const char *dirname)
 {
     m->nrefs = nrefs;
     m->array = calloc(m->nrefs, sizeof m->array[0]);
-    m->dirname = dirname;
     for (size_t i = 0; i < m->nrefs; ++i) {
         pthread_mutex_init(&m->array[i].lock, NULL);
         pthread_mutex_lock(&m->array[i].lock);
+    }
+    if (dirname) {
+        int length;
+        length = snprintf(NULL, 0, "%s.encodings", dirname);
+        m->dirname = calloc(length + 1, sizeof m->dirname[0]);
+        (void) snprintf(m->dirname, length + 1, "%s.encodings", dirname);
+    } else {
+        m->dirname = NULL;
     }
     return ACIRC_OK;
 }
@@ -52,6 +67,8 @@ storage_clear(storage_t *m, acirc_free_f f, void *extra)
         }
     }
     free(m->array);
+    if (m->dirname)
+        free(m->dirname);
 }
 
 int

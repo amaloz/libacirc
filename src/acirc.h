@@ -56,6 +56,7 @@ acirc_traverse(acirc_t *c, acirc_input_f input_f, acirc_const_f const_f,
                acirc_fread_f fread_f, const char *dirname,
                void *extra, size_t nthreads);
 
+const char * acirc_fname(const acirc_t *c);
 size_t acirc_ninputs(const acirc_t *c);
 size_t acirc_nconsts(const acirc_t *c);
 size_t acirc_nsecrets(const acirc_t *c);
