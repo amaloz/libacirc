@@ -20,8 +20,8 @@ typedef void * (*acirc_eval_f)(size_t, acirc_op, size_t, const void *, size_t, c
 typedef void * (*acirc_output_f)(size_t, size_t, void *, void *);
 typedef void * (*acirc_copy_f)(void *, void *);
 typedef void   (*acirc_free_f)(void *, void *);
-typedef void   (*acirc_fwrite_f)(void *, void *, FILE *);
-typedef void * (*acirc_fread_f)(void *, FILE *);
+typedef int    (*acirc_write_f)(size_t, void *, void *);
+typedef void * (*acirc_read_f)(size_t, void *);
 
 typedef struct {
     acirc_input_f input_f;
@@ -30,7 +30,7 @@ typedef struct {
     void *extra;
 } acirc_parse_t;
 
-acirc_t *acirc_new(const char *fname, bool mmapped);
+acirc_t *acirc_new(const char *fname, bool saved, bool mmapped);
 void acirc_free(acirc_t *c);
 
 size_t acirc_ngates(const acirc_t *c);
@@ -52,9 +52,8 @@ mpz_t ** acirc_eval_mpz(const acirc_t *c, mpz_t **xs, mpz_t **ys, const mpz_t mo
 void **
 acirc_traverse(acirc_t *c, acirc_input_f input_f, acirc_const_f const_f,
                acirc_eval_f eval_f, acirc_output_f output_f,
-               acirc_free_f free_f, acirc_fwrite_f fwrite_f,
-               acirc_fread_f fread_f, const char *dirname,
-               void *extra, size_t nthreads);
+               acirc_free_f free_f, acirc_write_f write_f,
+               acirc_read_f read_f, void *extra, size_t nthreads);
 
 const char * acirc_fname(const acirc_t *c);
 size_t acirc_ninputs(const acirc_t *c);

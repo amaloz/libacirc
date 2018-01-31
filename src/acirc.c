@@ -13,8 +13,8 @@
 typedef struct {
     acirc_eval_f eval;
     acirc_free_f free;
-    acirc_fwrite_f fwrite;
-    acirc_fread_f fread;
+    acirc_write_f write;
+    acirc_read_f read;
     storage_t *map;
     acirc_op op;
     ref_t ref;
@@ -22,13 +22,14 @@ typedef struct {
     ref_t xref;
     ref_t yref;
     ref_state_e state;
+    bool saved;
     void *extra;
 } eval_args_t;
 
 typedef struct {
     acirc_output_f output;
     acirc_free_f free;
-    acirc_fread_f fread;
+    acirc_read_f read;
     void **outputs;
     storage_t *map;
     ref_t i;
@@ -140,7 +141,7 @@ acirc_test_output(const acirc_t *c, size_t i)
 }
 
 acirc_t *
-acirc_new(const char *fname, bool mmapped)
+acirc_new(const char *fname, bool saved, bool mmapped)
 {
     acirc_t *c;
 
@@ -148,6 +149,7 @@ acirc_new(const char *fname, bool mmapped)
         return NULL;
 
     c->fname = strdup(fname);
+    c->saved = saved;
 
     if (mmapped) {
         int fd, len;
@@ -220,15 +222,14 @@ acirc_free(acirc_t *c)
 void **
 acirc_traverse(acirc_t *c, acirc_input_f input_f, acirc_const_f const_f,
                acirc_eval_f eval_f, acirc_output_f output_f,
-               acirc_free_f free_f, acirc_fwrite_f fwrite_f,
-               acirc_fread_f fread_f, const char *dirname,
-               void *extra, size_t nthreads)
+               acirc_free_f free_f, acirc_write_f write_f,
+               acirc_read_f read_f, void *extra, size_t nthreads)
 {
     void **outputs = NULL;
 
-    storage_init(&c->map, c->nrefs, dirname);
+    storage_init(&c->map, c->nrefs);
     c->pool = nthreads ? threadpool_create(nthreads) : NULL;
-    if (yyparse(c, input_f, const_f, eval_f, free_f, fwrite_f, fread_f, extra) != 0) {
+    if (yyparse(c, input_f, const_f, eval_f, free_f, write_f, read_f, extra) != 0) {
         fprintf(stderr, "error: parsing circuit failed\n");
         goto cleanup;
     }
@@ -407,10 +408,10 @@ eval_worker(void *vargs)
     bool x_done, y_done;
     eval_args_t *args = vargs;
 
-    x = storage_get(args->map, args->xref, args->fread, args->extra);
-    y = storage_get(args->map, args->yref, args->fread, args->extra);
+    x = storage_get(args->map, args->xref, args->read, args->extra);
+    y = storage_get(args->map, args->yref, args->read, args->extra);
 
-    if (args->state != REF_SKIP)
+    if (!args->saved || args->state != REF_SKIP)
         rop = args->eval(args->ref, args->op, args->xref, x, args->yref, y, args->extra);
 
     x_done = storage_update_item_count(args->map, args->xref);
@@ -420,13 +421,13 @@ eval_worker(void *vargs)
                 args->state == REF_SAVE);
 
     if (x_done) {
-        storage_remove_item(args->map, args->xref, args->fwrite, args->extra);
-        if (args->free && x)
+        storage_remove_item(args->map, args->xref, args->write, args->extra);
+        if (args->free)
             args->free(x, args->extra);
     }
     if (y_done) {
-        storage_remove_item(args->map, args->yref, args->fwrite, args->extra);
-        if (args->free && y)
+        storage_remove_item(args->map, args->yref, args->write, args->extra);
+        if (args->free)
             args->free(y, args->extra);
     }
     free(args);
@@ -434,7 +435,7 @@ eval_worker(void *vargs)
 
 int
 acirc_eval_gate(acirc_t *c, acirc_eval_f eval_f, acirc_free_f free_f,
-                acirc_fwrite_f fwrite_f, acirc_fread_f fread_f,
+                acirc_write_f write_f, acirc_read_f read_f,
                 acirc_op op, ref_t ref, ref_t xref, ref_t yref,
                 ssize_t count, ref_state_e state, void *extra)
 {
@@ -443,8 +444,8 @@ acirc_eval_gate(acirc_t *c, acirc_eval_f eval_f, acirc_free_f free_f,
         return ACIRC_ERR;
     args->eval = eval_f;
     args->free = free_f;
-    args->fwrite = fwrite_f;
-    args->fread = fread_f;
+    args->write = write_f;
+    args->read = read_f;
     args->map = &c->map;
     args->op = op;
     args->ref = ref;
@@ -452,6 +453,7 @@ acirc_eval_gate(acirc_t *c, acirc_eval_f eval_f, acirc_free_f free_f,
     args->xref = xref;
     args->yref = yref;
     args->state = state;
+    args->saved = c->saved;
     args->extra = extra;
     if (c->pool)
         threadpool_add_job(c->pool, eval_worker, args);
@@ -466,7 +468,7 @@ output_worker(void *vargs)
     output_args_t *args = vargs;
     void *x = NULL;
 
-    x = storage_get(args->map, args->ref, args->fread, args->extra);
+    x = storage_get(args->map, args->ref, args->read, args->extra);
     args->outputs[args->i] = args->output ? args->output(args->ref, args->i, x, args->extra) : x;
     free(args);
 }
