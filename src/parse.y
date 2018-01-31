@@ -172,7 +172,11 @@ secret:         NUM SECRET NUM ENDL
                 }
                 ;
 
-gate:           NUM GATE NUM NUM COLON NUM ENDL
+gate:           NUM GATE NUM NUM ENDL
+                {
+                    acirc_eval_gate(c, eval_f, free_f, fwrite_f, fread_f, $2, $1, $3, $4, -1, REF_STD, extra);
+                }
+        |       NUM GATE NUM NUM COLON NUM ENDL
                 {
                     acirc_eval_gate(c, eval_f, free_f, fwrite_f, fread_f, $2, $1, $3, $4, $6, REF_STD, extra);
                 }
