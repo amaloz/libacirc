@@ -85,9 +85,8 @@ storage_remove_item(storage_t *m, size_t ref, acirc_write_f write_f,
         return;
     assert(m->array[ref].count == 0);
     pthread_mutex_lock(&m->array[ref].lock);
-    if (m->array[ref].save && write_f) {
+    if (m->array[ref].save && write_f)
         (void) write_f(ref, m->array[ref].value, extra);
-    }
     m->array[ref].value = NULL;
     m->array[ref].count = 0;
     m->array[ref].mine = false;

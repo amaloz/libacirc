@@ -100,17 +100,45 @@ acirc_nsymbols(const acirc_t *c)
 }
 
 size_t
+acirc_nslots(const acirc_t *c)
+{
+    return acirc_nsymbols(c) + (acirc_nconsts(c) + acirc_nsecrets(c) ? 1 : 0);
+}
+
+size_t
 acirc_ntests(const acirc_t *c)
 {
     return c->ntests;
 }
 
 size_t
+acirc_has_consts(const acirc_t *c)
+{
+    return acirc_nconsts(c) + acirc_nsecrets(c) > 0;
+}
+
+size_t
 acirc_symlen(const acirc_t *c, size_t i)
 {
-    if (i >= c->nsymbols)
+    if (acirc_has_consts(c) && i == acirc_nsymbols(c))
+        return acirc_nconsts(c) + acirc_nsecrets(c);
+    if (i >= acirc_nsymbols(c))
         return 0;
     return c->symlens[i];
+}
+
+size_t
+acirc_symnum(const acirc_t *c, size_t i)
+{
+    if (acirc_nconsts(c) + acirc_nsecrets(c) && i == acirc_nsymbols(c))
+        return 1;
+    if (i >= acirc_nsymbols(c))
+        return 0;
+    if (acirc_is_sigma(c, i))
+        return acirc_symlen(c, i);
+    else if (acirc_symlen(c, i) >= sizeof(size_t) * 8)
+        return 0;
+    else return 1 << acirc_symlen(c, i);
 }
 
 bool
