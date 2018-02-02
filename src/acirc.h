@@ -60,7 +60,6 @@ void   acirc_set_saved(acirc_t *c);
 size_t acirc_ninputs(const acirc_t *c);
 size_t acirc_has_consts(const acirc_t *c);
 size_t acirc_nconsts(const acirc_t *c);
-size_t acirc_nsecrets(const acirc_t *c);
 size_t acirc_noutputs(const acirc_t *c);
 size_t acirc_nsymbols(const acirc_t *c);
 size_t acirc_nslots(const acirc_t *c);
@@ -71,7 +70,6 @@ bool   acirc_is_saved(const acirc_t *c);
 bool   acirc_is_sigma(const acirc_t *c, size_t i);
 bool   acirc_is_binary(const acirc_t *c);
 long   acirc_const(const acirc_t *c, size_t i);
-long   acirc_secret(const acirc_t *c, size_t i);
 
 size_t acirc_ntests(const acirc_t *c);
 long * acirc_test_input(const acirc_t *c, size_t i);

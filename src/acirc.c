@@ -78,14 +78,14 @@ acirc_ninputs(const acirc_t *c)
 size_t
 acirc_nconsts(const acirc_t *c)
 {
-    return c->nconsts;
+    return c->nconsts + c->nsecrets;
 }
 
-size_t
-acirc_nsecrets(const acirc_t *c)
-{
-    return c->nsecrets;
-}
+/* size_t */
+/* acirc_nsecrets(const acirc_t *c) */
+/* { */
+/*     return c->nsecrets; */
+/* } */
 
 size_t
 acirc_noutputs(const acirc_t *c)
@@ -102,7 +102,7 @@ acirc_nsymbols(const acirc_t *c)
 size_t
 acirc_nslots(const acirc_t *c)
 {
-    return acirc_nsymbols(c) + (acirc_nconsts(c) + acirc_nsecrets(c) ? 1 : 0);
+    return acirc_nsymbols(c) + (acirc_nconsts(c) ? 1 : 0);
 }
 
 size_t
@@ -114,14 +114,14 @@ acirc_ntests(const acirc_t *c)
 size_t
 acirc_has_consts(const acirc_t *c)
 {
-    return acirc_nconsts(c) + acirc_nsecrets(c) > 0;
+    return acirc_nconsts(c) > 0;
 }
 
 size_t
 acirc_symlen(const acirc_t *c, size_t i)
 {
     if (acirc_has_consts(c) && i == acirc_nsymbols(c))
-        return acirc_nconsts(c) + acirc_nsecrets(c);
+        return acirc_nconsts(c);
     if (i >= acirc_nsymbols(c))
         return 0;
     return c->symlens[i];
@@ -130,7 +130,7 @@ acirc_symlen(const acirc_t *c, size_t i)
 size_t
 acirc_symnum(const acirc_t *c, size_t i)
 {
-    if (acirc_nconsts(c) + acirc_nsecrets(c) && i == acirc_nsymbols(c))
+    if (acirc_nconsts(c) && i == acirc_nsymbols(c))
         return 1;
     if (i >= acirc_nsymbols(c))
         return 0;
@@ -152,18 +152,20 @@ acirc_is_sigma(const acirc_t *c, size_t i)
 long
 acirc_const(const acirc_t *c, size_t i)
 {
-    if (i >= c->nconsts)
+    if (i >= c->nconsts + c->nsecrets)
         return 0;
+    if (i >= c->nconsts)
+        return c->secrets[i - c->nconsts];
     return c->consts[i];
 }
 
-long
-acirc_secret(const acirc_t *c, size_t i)
-{
-    if (i >= c->nsecrets)
-        return 0;
-    return c->secrets[i];
-}
+/* long */
+/* acirc_secret(const acirc_t *c, size_t i) */
+/* { */
+/*     if (i >= c->nsecrets) */
+/*         return 0; */
+/*     return c->secrets[i]; */
+/* } */
 
 long *
 acirc_test_input(const acirc_t *c, size_t i)
