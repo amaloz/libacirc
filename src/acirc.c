@@ -37,7 +37,7 @@ typedef struct {
     void *extra;
 } output_args_t;
 
-extern FILE *yyin;
+void yyrestart(FILE *);
 
 const char *
 acirc_fname(const acirc_t *c)
@@ -222,7 +222,7 @@ acirc_new(const char *fname, bool saved, bool mmapped)
         }
     }
 
-    yyin = c->fp;
+    yyrestart(c->fp);
     if (yyparse(c, NULL, NULL, NULL, NULL, NULL, NULL, NULL) != 0) {
         fprintf(stderr, "error: parsing circuit failed\n");
         goto error;
