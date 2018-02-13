@@ -1,13 +1,14 @@
 #include "storage.h"
 
 #include <assert.h>
+#include <stdatomic.h>
 #include <stdlib.h>
 #include <string.h>
 
 struct data_t {
     void *value;
     pthread_mutex_t lock;
-    ssize_t count;
+    _Atomic unsigned long count;
     bool mine, save;
 };
 
@@ -45,7 +46,7 @@ storage_put(storage_t *m, size_t ref, void *value, ssize_t count,
     if (ref >= m->nrefs)
         return ACIRC_ERR;
     m->array[ref].value = value;
-    m->array[ref].count = count;
+    m->array[ref].count = ATOMIC_VAR_INIT(count);
     m->array[ref].mine = mine;
     m->array[ref].save = save;
     pthread_mutex_unlock(&m->array[ref].lock);
@@ -70,11 +71,7 @@ storage_get(storage_t *m, size_t ref, acirc_read_f read_f, void *extra)
 bool
 storage_update_item_count(storage_t *m, size_t ref)
 {
-    bool result;
-    pthread_mutex_lock(&m->array[ref].lock);
-    result = m->array[ref].count > 0 && --m->array[ref].count == 0;
-    pthread_mutex_unlock(&m->array[ref].lock);
-    return result;
+    return atomic_fetch_sub(&m->array[ref].count, 1) == 1;
 }
 
 void
@@ -83,12 +80,10 @@ storage_remove_item(storage_t *m, size_t ref, acirc_write_f write_f,
 {
     if (ref >= m->nrefs)
         return;
-    assert(m->array[ref].count == 0);
-    pthread_mutex_lock(&m->array[ref].lock);
+    /* Don't need to lock, as at this point no other thread will be accessing
+     * this item */
     if (m->array[ref].save && write_f)
         (void) write_f(ref, m->array[ref].value, extra);
     m->array[ref].value = NULL;
-    m->array[ref].count = 0;
     m->array[ref].mine = false;
-    pthread_mutex_unlock(&m->array[ref].lock);
 }

@@ -159,14 +159,6 @@ acirc_const(const acirc_t *c, size_t i)
     return c->consts[i];
 }
 
-/* long */
-/* acirc_secret(const acirc_t *c, size_t i) */
-/* { */
-/*     if (i >= c->nsecrets) */
-/*         return 0; */
-/*     return c->secrets[i]; */
-/* } */
-
 long *
 acirc_test_input(const acirc_t *c, size_t i)
 {
