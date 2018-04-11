@@ -30,7 +30,7 @@ typedef struct {
     void *extra;
 } acirc_parse_t;
 
-acirc_t *acirc_new(const char *fname, bool saved, bool mmapped);
+acirc_t *acirc_new(const char *fname, bool saved);
 void acirc_free(acirc_t *c);
 
 size_t acirc_ngates(const acirc_t *c);

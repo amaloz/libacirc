@@ -21,26 +21,40 @@ typedef struct {
     long *outs;
 } acirc_test_t;
 
+typedef enum {
+    REF_INPUT,
+    REF_CONST,
+    REF_SECRET,
+    REF_GATE,
+} acirc_ref_e;
+
+typedef struct {
+    acirc_ref_e type;
+    acirc_op op;
+    size_t x, y;
+    ssize_t count;
+    ref_state_e state;
+} acirc_ref_t;
+
 struct acirc_t {
-    FILE *fp;
     char *fname;
     size_t ninputs;
-    size_t nrefs;
     size_t nconsts;
     size_t nsecrets;
     size_t noutputs;
     size_t nsymbols;
     size_t ntests;
+    size_t nrefs;
+
     bool binary;                /* true if the circuit is binary */
 
+    acirc_ref_t *refs;          /* [nrefs] */
     long *consts;               /* [nconsts] */
     long *secrets;              /* [nsecrets] */
     size_t *symlens;            /* [nsymbols] */
     size_t *sigmas;             /* [nsymbols] */
     ref_t *outrefs;             /* [noutputs] */
     acirc_test_t *tests;        /* [ntests] */
-
-    bool circuit;               /* true if we are done parsing the prelim section */
 
     bool saved;
     storage_t map;

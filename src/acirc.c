@@ -81,12 +81,6 @@ acirc_nconsts(const acirc_t *c)
     return c->nconsts + c->nsecrets;
 }
 
-/* size_t */
-/* acirc_nsecrets(const acirc_t *c) */
-/* { */
-/*     return c->nsecrets; */
-/* } */
-
 size_t
 acirc_noutputs(const acirc_t *c)
 {
@@ -176,9 +170,10 @@ acirc_test_output(const acirc_t *c, size_t i)
 }
 
 acirc_t *
-acirc_new(const char *fname, bool saved, bool mmapped)
+acirc_new(const char *fname, bool saved)
 {
-    acirc_t *c;
+    acirc_t *c = NULL;
+    FILE *fp = NULL;
 
     if ((c = calloc(1, sizeof c[0])) == NULL)
         return NULL;
@@ -186,42 +181,22 @@ acirc_new(const char *fname, bool saved, bool mmapped)
     c->fname = strdup(fname);
     c->saved = saved;
 
-    if (mmapped) {
-        int fd, len;
-        struct stat st;
-        void *buf;
-
-        if ((fd = open(fname, O_RDONLY)) == -1) {
-            fprintf(stderr, "error: unable to open file '%s'\n", fname);
-            goto error;
-        }
-        stat(fname, &st);
-        len = st.st_size;
-        buf = mmap(NULL, len, PROT_READ, MAP_PRIVATE, fd, 0);
-        close(fd);
-        if (buf == NULL) {
-            fprintf(stderr, "error: unable to memory map file\n");
-            goto error;
-        }
-        if ((c->fp = fmemopen(buf, len, "r")) == NULL) {
-            fprintf(stderr, "error: unable to open memory mapped region\n");
-            goto error;
-        }
-    } else {
-        if ((c->fp = fopen(fname, "r")) == NULL) {
-            fprintf(stderr, "error: unable to open file '%s'\n", fname);
-            goto error;
-        }
+    if ((fp = fopen(fname, "r")) == NULL) {
+        fprintf(stderr, "error: unable to open file '%s'\n", fname);
+        goto error;
     }
 
-    yyrestart(c->fp);
-    if (yyparse(c, NULL, NULL, NULL, NULL, NULL, NULL, NULL) != 0) {
+    yyrestart(fp);
+    if (yyparse(c) != 0) {
         fprintf(stderr, "error: parsing circuit failed\n");
         goto error;
     }
     return c;
 error:
-    acirc_free(c);
+    if (c)
+        acirc_free(c);
+    if (fp)
+        fclose(fp);
     return NULL;
 }
 
@@ -230,8 +205,6 @@ acirc_free(acirc_t *c)
 {
     if (c == NULL)
         return;
-    if (c->fp)
-        fclose(c->fp);
     if (c->fname)
         free(c->fname);
     if (c->consts)
@@ -244,6 +217,8 @@ acirc_free(acirc_t *c)
         free(c->symlens);
     if (c->sigmas)
         free(c->sigmas);
+    if (c->refs)
+        free(c->refs);
     if (c->tests) {
         for (size_t i = 0; i < c->ntests; ++i) {
             free(c->tests[i].inps);
@@ -264,9 +239,23 @@ acirc_traverse(acirc_t *c, acirc_input_f input_f, acirc_const_f const_f,
 
     storage_init(&c->map, c->nrefs);
     c->pool = nthreads ? threadpool_create(nthreads) : NULL;
-    if (yyparse(c, input_f, const_f, eval_f, free_f, write_f, read_f, extra) != 0) {
-        fprintf(stderr, "error: parsing circuit failed\n");
-        goto cleanup;
+    for (size_t i = 0; i < c->nrefs; ++i) {
+        switch (c->refs[i].type) {
+        case REF_INPUT:
+            acirc_eval_input(c, input_f, i, c->refs[i].x, c->refs[i].count, extra);
+            break;
+        case REF_CONST:
+            acirc_eval_const(c, const_f, i, c->refs[i].x, c->refs[i].count, extra);
+            break;
+        case REF_SECRET:
+            acirc_eval_secret(c, const_f, i, c->refs[i].x, c->refs[i].count, extra);
+            break;
+        case REF_GATE:
+            acirc_eval_gate(c, eval_f, free_f, write_f, read_f, c->refs[i].op,
+                            i, c->refs[i].x, c->refs[i].y, c->refs[i].count,
+                            c->refs[i].state, extra);
+            break;
+        }
     }
     if ((outputs = calloc(acirc_noutputs(c), sizeof outputs[0])) == NULL) {
         fprintf(stderr, "error: memory allocation failed\n");
@@ -278,7 +267,6 @@ cleanup:
     if (c->pool)
         threadpool_destroy(c->pool);
     storage_clear(&c->map, free_f, extra);
-    fseek(c->fp, 0, SEEK_SET);
     return outputs;
 }
 
