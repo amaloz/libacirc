@@ -150,7 +150,7 @@ acirc_delta(const acirc_t *c_)
     acirc_t *c = (acirc_t *) c_;
     if (c->_delta)
         return c->_delta;
-    if (c->nconsts)
+    if (c->nconsts + c->nsecrets)
         if ((c->_delta = acirc_max_const_degree(c)) == 0)
             return 0;
     for (size_t k = 0 ; k < acirc_nsymbols(c); ++k) {
